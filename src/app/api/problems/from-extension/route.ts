@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { ExtensionPayload, Difficulty } from '@/types'
+import { ExtensionPayload, Difficulty, calculateSM2, confidenceToSM2Quality } from '@/types'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,8 +68,6 @@ export async function POST(request: NextRequest) {
       user_difficulty: body.user_difficulty || null,
       status: body.status || 'solved',
       needs_revision: body.needs_revision || false,
-
-      // New fields
       approach: body.approach?.trim() || null,
       mistakes: body.mistakes?.trim() || null,
       solve_help: body.solve_help || null,
@@ -77,8 +75,6 @@ export async function POST(request: NextRequest) {
       confidence: body.confidence || null,
       pattern: body.pattern || null,
       similar_problems: body.similar_problems?.trim() || null,
-
-      // Submission details
       language: body.language || null,
       runtime: body.runtime || null,
       memory: body.memory || null,
@@ -86,12 +82,43 @@ export async function POST(request: NextRequest) {
       solved_at: body.solved_at || new Date().toISOString(),
     }
 
-    // ==================== UPSERT ====================
+    // ==================== CHECK EXISTING ====================
+    // Fetch existing SM2 state so re-submissions continue the schedule
+    // instead of resetting from zero
     const { data: existing } = await supabase
       .from('problems')
-      .select('id, problem_key')
+      .select('id, problem_key, sm2_interval, sm2_ease_factor, sm2_repetitions')
       .eq('problem_key', body.problem_key)
       .single()
+
+    // ==================== CALCULATE SM2 ====================
+    // Map confidence chip → SM2 quality score (Low=2, Medium=3, High=5)
+    const quality = confidenceToSM2Quality(body.confidence ?? null)
+
+    const sm2Result = calculateSM2({
+      quality,
+      // If problem exists: continue from current SM2 state
+      // If new problem: start from SM2 defaults
+      repetitions: existing?.sm2_repetitions ?? 0,
+      ease_factor: existing?.sm2_ease_factor ?? 2.5,
+      interval:    existing?.sm2_interval    ?? 1,
+    })
+
+    console.log('[API] SM2 calculated:', {
+      confidence: body.confidence,
+      quality,
+      sm2Result,
+      isExisting: !!existing,
+    })
+
+    // ==================== UPSERT WITH SM2 ====================
+    const dataWithSM2 = {
+      ...problemData,
+      sm2_interval:    sm2Result.interval,
+      sm2_ease_factor: sm2Result.ease_factor,
+      sm2_repetitions: sm2Result.repetitions,
+      sm2_next_review: sm2Result.next_review,
+    }
 
     let data, error
 
@@ -99,7 +126,7 @@ export async function POST(request: NextRequest) {
       console.log('[API] Updating existing problem:', body.problem_key)
       ;({ data, error } = await supabase
         .from('problems')
-        .update({ ...problemData, updated_at: new Date().toISOString() } as any)
+        .update({ ...dataWithSM2, updated_at: new Date().toISOString() } as any)
         .eq('problem_key', body.problem_key)
         .select()
         .single())
@@ -107,7 +134,7 @@ export async function POST(request: NextRequest) {
       console.log('[API] Inserting new problem:', body.problem_key)
       ;({ data, error } = await supabase
         .from('problems')
-        .insert(problemData as any)
+        .insert(dataWithSM2 as any)
         .select()
         .single())
     }

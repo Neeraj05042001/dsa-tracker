@@ -1,9 +1,19 @@
-import React from 'react'
+import { Sidebar } from "@/components/layout/Sidebar";
 
-const layout = () => {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>layout</div>
-  )
-}
+    <div className="dashboard-shell">
+      {/* Sidebar — fixed left */}
+      <Sidebar revisionDueCount={0} />
 
-export default layout
+      {/* Main content area */}
+      <main className="dashboard-main">
+        {children}
+      </main>
+    </div>
+  );
+}
