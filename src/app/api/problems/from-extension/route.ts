@@ -1,61 +1,69 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { ExtensionPayload, Difficulty, calculateSM2, confidenceToSM2Quality } from '@/types'
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import {
+  ExtensionPayload,
+  Difficulty,
+  calculateSM2,
+  confidenceToSM2Quality,
+} from "@/types";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+  return NextResponse.json({}, { headers: corsHeaders });
 }
 
 function normalizeDifficulty(
   difficulty: string | null | undefined,
-  cfRating: number | null | undefined
+  cfRating: number | null | undefined,
 ): Difficulty | null {
   if (cfRating) {
-    if (cfRating < 1200) return 'easy'
-    if (cfRating < 1900) return 'medium'
-    return 'hard'
+    if (cfRating < 1200) return "easy";
+    if (cfRating < 1900) return "medium";
+    return "hard";
   }
-  if (!difficulty) return null
-  const d = difficulty.toLowerCase().trim()
-  if (d === 'easy') return 'easy'
-  if (d === 'medium') return 'medium'
-  if (d === 'hard') return 'hard'
-  return null
+  if (!difficulty) return null;
+  const d = difficulty.toLowerCase().trim();
+  if (d === "easy") return "easy";
+  if (d === "medium") return "medium";
+  if (d === "hard") return "hard";
+  return null;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ExtensionPayload = await request.json()
-    console.log('[API] Received from extension:', body)
+    const body: ExtensionPayload = await request.json();
+    console.log("[API] Received from extension:", body);
 
     // ==================== VALIDATE ====================
     if (!body.problem_name?.trim()) {
       return NextResponse.json(
-        { success: false, message: 'problem_name is required' },
-        { status: 400, headers: corsHeaders }
-      )
+        { success: false, message: "problem_name is required" },
+        { status: 400, headers: corsHeaders },
+      );
     }
     if (!body.platform) {
       return NextResponse.json(
-        { success: false, message: 'platform is required' },
-        { status: 400, headers: corsHeaders }
-      )
+        { success: false, message: "platform is required" },
+        { status: 400, headers: corsHeaders },
+      );
     }
     if (!body.problem_key) {
       return NextResponse.json(
-        { success: false, message: 'problem_key is required' },
-        { status: 400, headers: corsHeaders }
-      )
+        { success: false, message: "problem_key is required" },
+        { status: 400, headers: corsHeaders },
+      );
     }
 
     // ==================== NORMALIZE ====================
-    const normalizedDifficulty = normalizeDifficulty(body.difficulty, body.cf_rating)
+    const normalizedDifficulty = normalizeDifficulty(
+      body.difficulty,
+      body.cf_rating,
+    );
 
     const problemData = {
       problem_name: body.problem_name.trim(),
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
       cf_rating: body.cf_rating || null,
       tags: body.tags || [],
       user_difficulty: body.user_difficulty || null,
-      status: body.status || 'solved',
+      status: body.status || "solved",
       needs_revision: body.needs_revision || false,
       approach: body.approach?.trim() || null,
       mistakes: body.mistakes?.trim() || null,
@@ -80,20 +88,20 @@ export async function POST(request: NextRequest) {
       memory: body.memory || null,
       submission_url: body.submission_url || null,
       solved_at: body.solved_at || new Date().toISOString(),
-    }
+    };
 
     // ==================== CHECK EXISTING ====================
     // Fetch existing SM2 state so re-submissions continue the schedule
     // instead of resetting from zero
     const { data: existing } = await supabase
-      .from('problems')
-      .select('id, problem_key, sm2_interval, sm2_ease_factor, sm2_repetitions')
-      .eq('problem_key', body.problem_key)
-      .single()
+      .from("problems")
+      .select("id, problem_key, sm2_interval, sm2_ease_factor, sm2_repetitions")
+      .eq("problem_key", body.problem_key)
+      .single();
 
     // ==================== CALCULATE SM2 ====================
     // Map confidence chip → SM2 quality score (Low=2, Medium=3, High=5)
-    const quality = confidenceToSM2Quality(body.confidence ?? null)
+    const quality = confidenceToSM2Quality(body.confidence ?? null);
 
     const sm2Result = calculateSM2({
       quality,
@@ -101,55 +109,55 @@ export async function POST(request: NextRequest) {
       // If new problem: start from SM2 defaults
       repetitions: existing?.sm2_repetitions ?? 0,
       ease_factor: existing?.sm2_ease_factor ?? 2.5,
-      interval:    existing?.sm2_interval    ?? 1,
-    })
+      interval: existing?.sm2_interval ?? 1,
+    });
 
-    console.log('[API] SM2 calculated:', {
+    console.log("[API] SM2 calculated:", {
       confidence: body.confidence,
       quality,
       sm2Result,
       isExisting: !!existing,
-    })
+    });
 
     // ==================== UPSERT WITH SM2 ====================
     const dataWithSM2 = {
       ...problemData,
-      sm2_interval:    sm2Result.interval,
+      sm2_interval: sm2Result.interval,
       sm2_ease_factor: sm2Result.ease_factor,
       sm2_repetitions: sm2Result.repetitions,
       sm2_next_review: sm2Result.next_review,
-    }
+    };
 
-    let data, error
+    let data, error;
 
     if (existing) {
-      console.log('[API] Updating existing problem:', body.problem_key)
-      ;({ data, error } = await supabase
-        .from('problems')
+      console.log("[API] Updating existing problem:", body.problem_key);
+      ({ data, error } = await supabase
+        .from("problems")
         .update({ ...dataWithSM2, updated_at: new Date().toISOString() } as any)
-        .eq('problem_key', body.problem_key)
+        .eq("problem_key", body.problem_key)
         .select()
-        .single())
+        .single());
     } else {
-      console.log('[API] Inserting new problem:', body.problem_key)
-      ;({ data, error } = await supabase
-        .from('problems')
+      console.log("[API] Inserting new problem:", body.problem_key);
+      ({ data, error } = await supabase
+        .from("problems")
         .insert(dataWithSM2 as any)
         .select()
-        .single())
+        .single());
     }
 
     if (error) {
-      console.error('[API] Supabase error:', error)
+      console.error("[API] Supabase error:", error);
       return NextResponse.json(
         { success: false, message: error.message },
-        { status: 400, headers: corsHeaders }
-      )
+        { status: 400, headers: corsHeaders },
+      );
     }
 
     // ==================== LOG HISTORY ====================
     if (body.submission_id || body.status) {
-      await supabase.from('submission_history').insert({
+      await supabase.from("submission_history").insert({
         problem_key: body.problem_key,
         platform: body.platform,
         submission_id: body.submission_id || null,
@@ -157,26 +165,26 @@ export async function POST(request: NextRequest) {
         language: body.language || null,
         runtime: body.runtime || null,
         memory: body.memory || null,
+        confidence: body.confidence || null, 
         submitted_at: body.solved_at || new Date().toISOString(),
-      } as any)
+      } as any);
     }
 
-    console.log('[API] Success:', data)
+    console.log("[API] Success:", data);
 
     return NextResponse.json(
       {
         success: true,
-        message: existing ? 'Problem updated' : 'Problem added',
+        message: existing ? "Problem updated" : "Problem added",
         problem: data,
       },
-      { status: 201, headers: corsHeaders }
-    )
-
+      { status: 201, headers: corsHeaders },
+    );
   } catch (error) {
-    console.error('[API] Unexpected error:', error)
+    console.error("[API] Unexpected error:", error);
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500, headers: corsHeaders }
-    )
+      { success: false, message: "Internal server error" },
+      { status: 500, headers: corsHeaders },
+    );
   }
 }

@@ -103,7 +103,7 @@ export default async function DashboardPage() {
         <div style={{ marginBottom: 20 }}>
           <ActivityHeatmap
             data={stats.daily_activity}
-            totalThisYear={stats.total_this_month}
+            totalThisYear={stats.total}
           />
         </div>
 
