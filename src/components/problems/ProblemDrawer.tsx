@@ -182,11 +182,49 @@ function SM2Row({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-
 function Divider() {
   return <div style={{ height: 1, background: "var(--border-subtle)", margin: "20px 0" }} />;
 }
 
+function formatNextReviewHuman(nextReview: string | null, repetitions: number): {
+  label: string;
+  sublabel: string;
+  color: string;
+} {
+  if (!nextReview || repetitions === 0) {
+    return {
+      label: "Not reviewed yet",
+      sublabel: "Will schedule after first review",
+      color: "var(--text-muted)",
+    };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const reviewDate = new Date(nextReview);
+  reviewDate.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((reviewDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return {
+    label: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? "s" : ""}`,
+    sublabel: "Should have been reviewed already",
+    color: "var(--hard)",
+  };
+  if (diffDays === 0) return {
+    label: "Due today",
+    sublabel: "Go to Revision to review",
+    color: "var(--medium)",
+  };
+  if (diffDays === 1) return {
+    label: "Due tomorrow",
+    sublabel: "Review scheduled for tomorrow",
+    color: "var(--medium)",
+  };
+  return {
+    label: `In ${diffDays} days`,
+    sublabel: `Next review on ${new Date(nextReview).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+    color: "var(--easy)",
+  };
+}
 // ─── Main Drawer ──────────────────────────────────────────────────────────────
 
 export function ProblemDrawer({ problem, open, onClose }: ProblemDrawerProps) {
@@ -602,6 +640,48 @@ export function ProblemDrawer({ problem, open, onClose }: ProblemDrawerProps) {
                     value={(problem.sm2_ease_factor ?? 2.5).toFixed(2)}
                   />
                 </div>
+              </div>
+
+              {/* ── SM2 block — human readable ── */}
+              <div style={{ marginBottom: 20 }}>
+                <SectionLabel>Next Review</SectionLabel>
+                {(() => {
+                  const { label, sublabel, color } = formatNextReviewHuman(
+                    problem.sm2_next_review,
+                    problem.sm2_repetitions ?? 0,
+                  );
+                  return (
+                    <div
+                      style={{
+                        background: "var(--bg-elevated)",
+                        border: `1px solid color-mix(in srgb, ${color} 20%, var(--border-subtle))`,
+                        borderRadius: "var(--radius-md)",
+                        padding: "12px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color }}>{label}</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{sublabel}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                          {(problem.sm2_repetitions ?? 0) > 0
+                            ? `Reviewed ${problem.sm2_repetitions} time${problem.sm2_repetitions !== 1 ? "s" : ""}`
+                            : "Never reviewed"}
+                        </span>
+                        {(problem.sm2_repetitions ?? 0) > 0 && (
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                            every {problem.sm2_interval ?? 1}d
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <Divider />

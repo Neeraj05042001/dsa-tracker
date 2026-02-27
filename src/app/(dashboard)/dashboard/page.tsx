@@ -96,6 +96,7 @@ export default async function DashboardPage() {
             suffix=" days"
             delay={180}
             sublabel={`Best: ${stats.longest_streak} days`}
+            dimWhenZero
           />
         </div>
 

@@ -505,6 +505,54 @@ function ConfidenceTrend({
     </div>
   );
 }
+// -------------------
+
+// ─── SM2 Human Readable ───────────────────────────────────────────────────────
+
+function formatNextReviewHuman(nextReview: string | null, repetitions: number): {
+  label: string;
+  sublabel: string;
+  color: string;
+} {
+  if (!nextReview || repetitions === 0) {
+    return {
+      label: "Not reviewed yet",
+      sublabel: "Will schedule after first review session",
+      color: "var(--text-muted)",
+    };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const reviewDate = new Date(nextReview);
+  reviewDate.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((reviewDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return {
+    label: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? "s" : ""}`,
+    sublabel: "Should have been reviewed — open Revision queue",
+    color: "var(--hard)",
+  };
+  if (diffDays === 0) return {
+    label: "Due today",
+    sublabel: "Open the Revision queue to review now",
+    color: "var(--medium)",
+  };
+  if (diffDays === 1) return {
+    label: "Due tomorrow",
+    sublabel: "Review scheduled for tomorrow",
+    color: "var(--medium)",
+  };
+  return {
+    label: `In ${diffDays} days`,
+    sublabel: `Scheduled for ${new Date(nextReview).toLocaleDateString("en-US", { month: "long", day: "numeric" })}`,
+    color: "var(--easy)",
+  };
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+
+
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -1163,59 +1211,58 @@ export function ProblemDetail({ problem, submissions }: ProblemDetailProps) {
         {/* ════ RIGHT COLUMN ════ */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* SM2 Card */}
+          
+
+          {/* SM2 Card — human readable */}
           <div className="card" style={{ padding: "20px 24px" }}>
             <SectionLabel>Spaced Repetition</SectionLabel>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 14,
-              }}
-            >
-              {[
-                {
-                  label: "Next Review",
-                  value: localProblem.sm2_next_review
-                    ? formatDateShort(localProblem.sm2_next_review)
-                    : "Not scheduled",
-                  highlight: true,
-                },
-                {
-                  label: "Interval",
-                  value: `${localProblem.sm2_interval ?? 1}d`,
-                },
-                {
-                  label: "Repetitions",
-                  value: String(localProblem.sm2_repetitions ?? 0),
-                },
-                {
-                  label: "Ease Factor",
-                  value: (localProblem.sm2_ease_factor ?? 2.5).toFixed(2),
-                },
-              ].map(({ label, value, highlight }) => (
-                <div key={label}>
-                  <span
-                    className="text-section-header"
-                    style={{ display: "block", marginBottom: 4 }}
-                  >
-                    {label}
-                  </span>
-                  <span
+            {(() => {
+              const reps = localProblem.sm2_repetitions ?? 0;
+              const { label, sublabel, color } = formatNextReviewHuman(
+                localProblem.sm2_next_review,
+                reps,
+              );
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* Next review status */}
+                  <div
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 14,
-                      fontWeight: highlight ? 600 : 400,
-                      color: highlight
-                        ? "var(--accent)"
-                        : "var(--text-primary)",
+                      padding: "12px 14px",
+                      background: `color-mix(in srgb, ${color} 8%, var(--bg-elevated))`,
+                      border: `1px solid color-mix(in srgb, ${color} 22%, var(--border-subtle))`,
+                      borderRadius: "var(--radius-md)",
                     }}
                   >
-                    {value}
-                  </span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color, display: "block", marginBottom: 3 }}>
+                      {label}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {sublabel}
+                    </span>
+                  </div>
+
+                  {/* Reviewed count + interval — only when reviewed at least once */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div>
+                      <span className="text-section-header" style={{ display: "block", marginBottom: 4 }}>
+                        Reviews Done
+                      </span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color: reps > 0 ? "var(--accent)" : "var(--text-muted)" }}>
+                        {reps > 0 ? `${reps}×` : "None yet"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-section-header" style={{ display: "block", marginBottom: 4 }}>
+                        Review Interval
+                      </span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: reps > 0 ? "var(--text-primary)" : "var(--text-muted)" }}>
+                        {reps > 0 ? `Every ${localProblem.sm2_interval ?? 1} day${(localProblem.sm2_interval ?? 1) !== 1 ? "s" : ""}` : "—"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
 
           {/* Submission history */}

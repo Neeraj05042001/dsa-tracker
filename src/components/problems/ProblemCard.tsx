@@ -29,10 +29,13 @@ function effectiveDifficulty(p: Problem): string | null {
 
 function DifficultyPip({ difficulty }: { difficulty: string | null }) {
   const color =
-    difficulty === "easy" ? "var(--easy)"
-    : difficulty === "medium" ? "var(--medium)"
-    : difficulty === "hard" ? "var(--hard)"
-    : "var(--text-muted)";
+    difficulty === "easy"
+      ? "var(--easy)"
+      : difficulty === "medium"
+        ? "var(--medium)"
+        : difficulty === "hard"
+          ? "var(--hard)"
+          : "var(--text-muted)";
   const label = difficulty
     ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
     : "—";
@@ -63,13 +66,17 @@ function DifficultyPip({ difficulty }: { difficulty: string | null }) {
 
 function PlatformDot({ platform }: { platform: string }) {
   const color =
-    platform === "leetcode" ? "var(--lc-color)"
-    : platform === "codeforces" ? "var(--cf-color)"
-    : "var(--text-muted)";
+    platform === "leetcode"
+      ? "var(--lc-color)"
+      : platform === "codeforces"
+        ? "var(--cf-color)"
+        : "var(--text-muted)";
   const label =
-    platform === "leetcode" ? "LC"
-    : platform === "codeforces" ? "CF"
-    : platform;
+    platform === "leetcode"
+      ? "LC"
+      : platform === "codeforces"
+        ? "CF"
+        : platform;
   return (
     <span
       style={{
@@ -89,19 +96,36 @@ function PlatformDot({ platform }: { platform: string }) {
 }
 
 function ConfidenceDots({ confidence }: { confidence: string | null }) {
-  const filledCls =
-    confidence === "low" ? "filled-low"
-    : confidence === "medium" ? "filled-medium"
-    : confidence === "high" ? "filled-high"
-    : "";
-  const filled =
-    confidence === "high" ? 3 : confidence === "medium" ? 2 : confidence === "low" ? 1 : 0;
+  // const filledCls =
+  //   confidence === "low" ? "filled-low"
+  //   : confidence === "medium" ? "filled-medium"
+  //   : confidence === "high" ? "filled-high"
+  //   : "";
+  // const filled =
+  //   confidence === "high" ? 3 : confidence === "medium" ? 2 : confidence === "low" ? 1 : 0;
+  // return (
+  //   <div className="confidence-dots">
+  //     {[0, 1, 2].map((i) => (
+  //       <div key={i} className={`confidence-dot ${i < filled ? filledCls : ""}`} />
+  //     ))}
+  //   </div>
+  // );
+
+  const label =
+    confidence === "high"
+      ? "Confidence: High (solved cleanly)"
+      : confidence === "medium"
+        ? "Confidence: Medium (needed some effort)"
+        : confidence === "low"
+          ? "Confidence: Low (struggled)"
+          : "Confidence: Not rated";
+
   return (
-    <div className="confidence-dots">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className={`confidence-dot ${i < filled ? filledCls : ""}`} />
-      ))}
-    </div>
+    <div
+      className="confidence-dots"
+      title={label}
+      style={{ cursor: "help" }}
+    ></div>
   );
 }
 
@@ -109,7 +133,15 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
   if (!solveHelp || solveHelp === "no_help") {
     return (
       <span title="No help">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--easy)" strokeWidth="2.5" strokeLinecap="round">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--easy)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </span>
@@ -118,7 +150,15 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
   if (solveHelp === "hints") {
     return (
       <span title="Used hints" style={{ color: "var(--medium)" }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2.5" />
@@ -128,7 +168,15 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
   }
   return (
     <span title="Saw solution" style={{ color: "var(--hard)" }}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
         <circle cx="12" cy="12" r="10" />
         <line x1="15" y1="9" x2="9" y2="15" />
         <line x1="9" y1="9" x2="15" y2="15" />
@@ -152,19 +200,79 @@ function SkeletonCard({ index }: { index: number }) {
       }}
     >
       {/* Top row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div className="skeleton" style={{ width: "65%", height: 15, borderRadius: 4, animationDelay: `${index * 60}ms` }} />
-        <div className="skeleton" style={{ width: 24, height: 16, borderRadius: 10, animationDelay: `${index * 60 + 30}ms` }} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <div
+          className="skeleton"
+          style={{
+            width: "65%",
+            height: 15,
+            borderRadius: 4,
+            animationDelay: `${index * 60}ms`,
+          }}
+        />
+        <div
+          className="skeleton"
+          style={{
+            width: 24,
+            height: 16,
+            borderRadius: 10,
+            animationDelay: `${index * 60 + 30}ms`,
+          }}
+        />
       </div>
       {/* Tags row */}
       <div style={{ display: "flex", gap: 5 }}>
-        <div className="skeleton" style={{ width: 48, height: 18, borderRadius: 10, animationDelay: `${index * 60 + 60}ms` }} />
-        <div className="skeleton" style={{ width: 60, height: 18, borderRadius: 10, animationDelay: `${index * 60 + 90}ms` }} />
+        <div
+          className="skeleton"
+          style={{
+            width: 48,
+            height: 18,
+            borderRadius: 10,
+            animationDelay: `${index * 60 + 60}ms`,
+          }}
+        />
+        <div
+          className="skeleton"
+          style={{
+            width: 60,
+            height: 18,
+            borderRadius: 10,
+            animationDelay: `${index * 60 + 90}ms`,
+          }}
+        />
       </div>
       {/* Bottom row */}
-      <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between" }}>
-        <div className="skeleton" style={{ width: 36, height: 12, borderRadius: 4, animationDelay: `${index * 60 + 120}ms` }} />
-        <div className="skeleton" style={{ width: 56, height: 12, borderRadius: 4, animationDelay: `${index * 60 + 150}ms` }} />
+      <div
+        style={{
+          marginTop: "auto",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <div
+          className="skeleton"
+          style={{
+            width: 36,
+            height: 12,
+            borderRadius: 4,
+            animationDelay: `${index * 60 + 120}ms`,
+          }}
+        />
+        <div
+          className="skeleton"
+          style={{
+            width: 56,
+            height: 12,
+            borderRadius: 4,
+            animationDelay: `${index * 60 + 150}ms`,
+          }}
+        />
       </div>
     </div>
   );
@@ -183,13 +291,19 @@ function ProblemCard({
 }) {
   const diff = effectiveDifficulty(problem);
 
-  // Left border accent color based on difficulty
-  const accentColor =
-    diff === "easy" ? "var(--easy)"
-    : diff === "medium" ? "var(--medium)"
-    : diff === "hard" ? "var(--hard)"
-    : "var(--border-mid)";
+  
+  const diffAccent =
+    diff === "easy"
+      ? "var(--easy)"
+      : diff === "medium"
+        ? "var(--medium)"
+        : diff === "hard"
+          ? "var(--hard)"
+          : "var(--border-mid)";
 
+  const accentColor = problem.needs_revision
+    ? "color-mix(in srgb, var(--medium) 90%, var(--hard))"
+    : diffAccent;
   return (
     <div
       onClick={onClick}
@@ -203,7 +317,8 @@ function ProblemCard({
         borderLeft: `3px solid ${accentColor}`,
         position: "relative",
         animationDelay: `${index * 25}ms`,
-        transition: "transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+        transition:
+          "transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
         minHeight: 130,
       }}
       onMouseEnter={(e) => {
@@ -216,7 +331,14 @@ function ProblemCard({
       }}
     >
       {/* ── Top: name + platform ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
         <span
           style={{
             fontSize: 13,
@@ -240,7 +362,8 @@ function ProblemCard({
               fontWeight: 500,
               color: "var(--accent)",
               background: "var(--accent-muted)",
-              border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
               borderRadius: "var(--radius-pill)",
               padding: "2px 8px",
             }}
@@ -269,7 +392,13 @@ function ProblemCard({
             </span>
           ))}
           {problem.tags.length > 3 && (
-            <span style={{ fontSize: 10, color: "var(--text-muted)", padding: "1px 0" }}>
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--text-muted)",
+                padding: "1px 0",
+              }}
+            >
               +{problem.tags.length - 3}
             </span>
           )}
@@ -297,7 +426,7 @@ function ProblemCard({
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Needs revision dot */}
-          {problem.needs_revision && (
+          {/* {problem.needs_revision && (
             <span
               title="Needs revision"
               style={{
@@ -308,6 +437,28 @@ function ProblemCard({
                 flexShrink: 0,
               }}
             />
+          )} */}
+
+          {problem.needs_revision && (
+            <span
+              title="Flagged for revision"
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.06em",
+                color: "var(--medium)",
+                background:
+                  "color-mix(in srgb, var(--medium) 12%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--medium) 30%, transparent)",
+                borderRadius: "var(--radius-pill)",
+                padding: "1px 6px",
+                flexShrink: 0,
+              }}
+            >
+              Review
+            </span>
           )}
           <span
             className="text-data"
@@ -337,7 +488,9 @@ export function ProblemCardGrid({
       }}
     >
       {isLoading &&
-        Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} index={i} />)}
+        Array.from({ length: 12 }).map((_, i) => (
+          <SkeletonCard key={i} index={i} />
+        ))}
 
       {!isLoading &&
         problems.map((p, i) => (

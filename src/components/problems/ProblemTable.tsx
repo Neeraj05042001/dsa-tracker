@@ -17,7 +17,11 @@ interface ProblemTableProps {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
+  });
 }
 
 function effectiveDifficulty(p: Problem): string | null {
@@ -35,28 +39,55 @@ function formatPattern(pattern: string | null): string | null {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
-  if (!difficulty) return <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>;
-  const cls = difficulty === "easy" ? "badge badge-easy"
-    : difficulty === "medium" ? "badge badge-medium"
-    : "badge badge-hard";
-  return <span className={cls}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</span>;
+  if (!difficulty)
+    return <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>;
+  const cls =
+    difficulty === "easy"
+      ? "badge badge-easy"
+      : difficulty === "medium"
+        ? "badge badge-medium"
+        : "badge badge-hard";
+  return (
+    <span className={cls}>
+      {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+    </span>
+  );
 }
 
 function PlatformBadge({ platform }: { platform: string }) {
-  const cls = platform === "leetcode" ? "badge badge-lc"
-    : platform === "codeforces" ? "badge badge-cf"
-    : "badge";
-  const label = platform === "leetcode" ? "LC" : platform === "codeforces" ? "CF" : platform;
+  const cls =
+    platform === "leetcode"
+      ? "badge badge-lc"
+      : platform === "codeforces"
+        ? "badge badge-cf"
+        : "badge";
+  const label =
+    platform === "leetcode"
+      ? "LC"
+      : platform === "codeforces"
+        ? "CF"
+        : platform;
   return <span className={cls}>{label}</span>;
 }
 
 function ConfidenceDots({ confidence }: { confidence: string | null }) {
-  const filledCls = confidence === "low" ? "filled-low"
-    : confidence === "medium" ? "filled-medium"
-    : confidence === "high" ? "filled-high"
-    : "";
+  const filledCls =
+    confidence === "low"
+      ? "filled-low"
+      : confidence === "medium"
+        ? "filled-medium"
+        : confidence === "high"
+          ? "filled-high"
+          : "";
 
-  const filled = confidence === "high" ? 3 : confidence === "medium" ? 2 : confidence === "low" ? 1 : 0;
+  const filled =
+    confidence === "high"
+      ? 3
+      : confidence === "medium"
+        ? 2
+        : confidence === "low"
+          ? 1
+          : 0;
 
   return (
     <div className="confidence-dots">
@@ -74,7 +105,15 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
   if (!solveHelp || solveHelp === "no_help") {
     return (
       <span title="No help needed">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--easy)" strokeWidth="2" strokeLinecap="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--easy)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </span>
@@ -83,7 +122,15 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
   if (solveHelp === "hints") {
     return (
       <span title="Used hints" style={{ color: "var(--medium)" }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2.5" />
@@ -92,12 +139,21 @@ function SolveHelpIcon({ solveHelp }: { solveHelp: string | null }) {
     );
   }
   // saw_solution
+  // saw_solution — distinct X icon, not the same as hints
   return (
     <span title="Saw solution" style={{ color: "var(--hard)" }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
         <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2.5" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
       </svg>
     </span>
   );
@@ -177,7 +233,9 @@ function SortTh({
             width="7"
             height="5"
             viewBox="0 0 7 5"
-            fill={isActive && dir === "asc" ? "var(--accent)" : "var(--text-muted)"}
+            fill={
+              isActive && dir === "asc" ? "var(--accent)" : "var(--text-muted)"
+            }
           >
             <polygon points="3.5,0 7,5 0,5" />
           </svg>
@@ -185,7 +243,9 @@ function SortTh({
             width="7"
             height="5"
             viewBox="0 0 7 5"
-            fill={isActive && dir === "desc" ? "var(--accent)" : "var(--text-muted)"}
+            fill={
+              isActive && dir === "desc" ? "var(--accent)" : "var(--text-muted)"
+            }
           >
             <polygon points="3.5,5 7,0 0,0" />
           </svg>
@@ -234,7 +294,10 @@ function SkeletonRow({ index }: { index: number }) {
     <tr>
       {/* # */}
       <td style={{ padding: "10px 12px" }}>
-        <div className="skeleton" style={{ width: 20, height: 12, borderRadius: 4 }} />
+        <div
+          className="skeleton"
+          style={{ width: 20, height: 12, borderRadius: 4 }}
+        />
       </td>
       {widths.map((w, i) => (
         <td key={i} style={{ padding: "10px 12px" }}>
@@ -251,7 +314,10 @@ function SkeletonRow({ index }: { index: number }) {
       ))}
       {/* Actions */}
       <td style={{ padding: "10px 12px" }}>
-        <div className="skeleton" style={{ width: 20, height: 20, borderRadius: 6 }} />
+        <div
+          className="skeleton"
+          style={{ width: 20, height: 20, borderRadius: 6 }}
+        />
       </td>
     </tr>
   );
@@ -307,16 +373,72 @@ export function ProblemTable({
               </span>
             </th>
 
-            <SortTh field="problem_name" label="Problem" current={sort} onSort={onSort} />
+            <SortTh
+              field="problem_name"
+              label="Problem"
+              current={sort}
+              onSort={onSort}
+            />
             <StaticTh label="Platform" align="center" />
-            <SortTh field="difficulty" label="Difficulty" current={sort} onSort={onSort} align="center" />
+            <SortTh
+              field="difficulty"
+              label="Difficulty"
+              current={sort}
+              onSort={onSort}
+              align="center"
+            />
             <StaticTh label="Pattern" />
-            <SortTh field="confidence" label="Conf." current={sort} onSort={onSort} align="center" />
+            {/* <SortTh
+              field="confidence"
+              label="Conf."
+              current={sort}
+              onSort={onSort}
+              align="center"
+            /> */}
+             <th
+              onClick={() => onSort("confidence")}
+              title="Confidence: ● Low  ●● Medium  ●●● High"
+              style={{
+                padding: "8px 12px",
+                textAlign: "center",
+                cursor: "pointer",
+                userSelect: "none",
+                whiteSpace: "nowrap",
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
+            >
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.06em",
+                color: sort.field === "confidence" ? "var(--accent)" : "var(--text-muted)",
+                transition: "color 0.15s",
+                borderBottom: "1px dashed var(--border-mid)",
+                paddingBottom: 1,
+              }}>
+                Conf.
+              </span>
+            </th>
             <StaticTh label="Help" align="center" />
             <StaticTh label="Time" align="center" />
-            <SortTh field="solved_at" label="Solved" current={sort} onSort={onSort} align="right" />
+            <SortTh
+              field="solved_at"
+              label="Solved"
+              current={sort}
+              onSort={onSort}
+              align="right"
+            />
             {/* Actions — no header text */}
-            <th style={{ width: 36, borderBottom: "1px solid var(--border-subtle)" }} />
+            <th
+              style={{
+                width: 36,
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
+            />
           </tr>
         </thead>
 
@@ -324,7 +446,9 @@ export function ProblemTable({
         <tbody>
           {/* Loading state */}
           {isLoading &&
-            Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} index={i} />)}
+            Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonRow key={i} index={i} />
+            ))}
 
           {/* Empty state handled by parent, but as a safety net: */}
           {!isLoading && problems.length === 0 && (
@@ -390,15 +514,25 @@ export function ProblemTable({
                       {/* Needs revision indicator */}
                       {p.needs_revision && (
                         <span
-                          title="Needs revision"
+                          title="Flagged for revision"
                           style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: "var(--medium)",
+                            fontSize: 9,
+                            fontWeight: 700,
+                            textTransform: "uppercase" as const,
+                            letterSpacing: "0.05em",
+                            color: "var(--medium)",
+                            background:
+                              "color-mix(in srgb, var(--medium) 12%, transparent)",
+                            border:
+                              "1px solid color-mix(in srgb, var(--medium) 30%, transparent)",
+                            borderRadius: "var(--radius-pill)",
+                            padding: "1px 5px",
                             flexShrink: 0,
+                            lineHeight: 1.6,
                           }}
-                        />
+                        >
+                          Review
+                        </span>
                       )}
                       <span
                         style={{
@@ -439,7 +573,9 @@ export function ProblemTable({
                           </span>
                         ))}
                         {p.tags.length > 3 && (
-                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                          <span
+                            style={{ fontSize: 10, color: "var(--text-muted)" }}
+                          >
                             +{p.tags.length - 3}
                           </span>
                         )}
@@ -473,7 +609,11 @@ export function ProblemTable({
                         {formatPattern(p.pattern)}
                       </span>
                     ) : (
-                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>
+                      <span
+                        style={{ color: "var(--text-muted)", fontSize: 12 }}
+                      >
+                        —
+                      </span>
                     )}
                   </td>
 

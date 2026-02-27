@@ -10,6 +10,7 @@ interface StatCardProps {
   suffix?: string;        // e.g. " days"
   sublabel?: string;      // small text below value
   delay?: number;         // animation delay in ms
+  dimWhenZero?: boolean;
 }
 
 // Animates a number from 0 to target over ~600ms
@@ -48,9 +49,13 @@ export function StatCard({
   suffix = "",
   sublabel,
   delay = 0,
+  dimWhenZero = false,
 }: StatCardProps) {
   const displayed = useCountUp(value, 700, delay);
-  const color = accent ?? "var(--accent)";
+    const baseColor = accent ?? "var(--accent)";
+  // When dimWhenZero is true and value is 0, use muted palette to signal "inactive"
+  const isEmpty = dimWhenZero && value === 0;
+  const color = isEmpty ? "var(--text-muted)" : baseColor;
 
   return (
     <div
@@ -107,6 +112,8 @@ export function StatCard({
           color: color,
           lineHeight: 1,
           letterSpacing: "-0.02em",
+          opacity: isEmpty ? 0.5 : 1,
+          transition: "color 0.3s ease, opacity 0.3s ease",
         }}>
           {displayed}
         </span>
