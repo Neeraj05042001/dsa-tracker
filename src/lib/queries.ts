@@ -13,6 +13,7 @@ import {
   confidenceToScore,
 } from "@/types";
 
+
 // ============================================================
 // OVERVIEW / STATS QUERIES
 // ============================================================
@@ -42,33 +43,49 @@ export async function getDashboardStats(): Promise<ProblemStats> {
       total: group.length,
       solved: group.filter((p) => p.status === "solved").length,
       attempted: group.filter((p) => p.status === "attempted").length,
-      easy: group.filter((p) => (p.difficulty ?? p.user_difficulty) === "easy").length,
-      medium: group.filter((p) => (p.difficulty ?? p.user_difficulty) === "medium").length,
-      hard: group.filter((p) => (p.difficulty ?? p.user_difficulty) === "hard").length,
+      easy: group.filter((p) => (p.difficulty ?? p.user_difficulty) === "easy")
+        .length,
+      medium: group.filter(
+        (p) => (p.difficulty ?? p.user_difficulty) === "medium",
+      ).length,
+      hard: group.filter((p) => (p.difficulty ?? p.user_difficulty) === "hard")
+        .length,
     };
   });
 
   // ── Difficulty breakdown ───────────────────────────────────
   const by_difficulty: DifficultyBreakdown = {
-    easy:    problems.filter((p) => (p.difficulty ?? p.user_difficulty) === "easy").length,
-    medium:  problems.filter((p) => (p.difficulty ?? p.user_difficulty) === "medium").length,
-    hard:    problems.filter((p) => (p.difficulty ?? p.user_difficulty) === "hard").length,
+    easy: problems.filter((p) => (p.difficulty ?? p.user_difficulty) === "easy")
+      .length,
+    medium: problems.filter(
+      (p) => (p.difficulty ?? p.user_difficulty) === "medium",
+    ).length,
+    hard: problems.filter((p) => (p.difficulty ?? p.user_difficulty) === "hard")
+      .length,
     unknown: problems.filter((p) => !p.difficulty && !p.user_difficulty).length,
   };
 
   // ── Solve help breakdown ───────────────────────────────────
   const by_solve_help: SolveHelpBreakdown = {
-    no_help:      problems.filter((p) => p.solve_help === "no_help").length,
-    hints:        problems.filter((p) => p.solve_help === "hints").length,
-    saw_solution: problems.filter((p) => p.solve_help === "saw_solution").length,
+    no_help: problems.filter((p) => p.solve_help === "no_help").length,
+    hints: problems.filter((p) => p.solve_help === "hints").length,
+    saw_solution: problems.filter((p) => p.solve_help === "saw_solution")
+      .length,
   };
 
   // ── Tag stats ──────────────────────────────────────────────
-  const tagMap = new Map<string, { count: number; confidence_sum: number; low_count: number }>();
+  const tagMap = new Map<
+    string,
+    { count: number; confidence_sum: number; low_count: number }
+  >();
   for (const p of problems) {
     if (!p.tags?.length) continue;
     for (const tag of p.tags) {
-      const existing = tagMap.get(tag) ?? { count: 0, confidence_sum: 0, low_count: 0 };
+      const existing = tagMap.get(tag) ?? {
+        count: 0,
+        confidence_sum: 0,
+        low_count: 0,
+      };
       existing.count += 1;
       existing.confidence_sum += confidenceToScore(p.confidence);
       if (p.confidence === "low") existing.low_count += 1;
@@ -85,10 +102,16 @@ export async function getDashboardStats(): Promise<ProblemStats> {
     .sort((a, b) => b.count - a.count);
 
   // ── Pattern stats ──────────────────────────────────────────
-  const patternMap = new Map<string, { count: number; confidence_sum: number }>();
+  const patternMap = new Map<
+    string,
+    { count: number; confidence_sum: number }
+  >();
   for (const p of problems) {
     if (!p.pattern) continue;
-    const existing = patternMap.get(p.pattern) ?? { count: 0, confidence_sum: 0 };
+    const existing = patternMap.get(p.pattern) ?? {
+      count: 0,
+      confidence_sum: 0,
+    };
     existing.count += 1;
     existing.confidence_sum += confidenceToScore(p.confidence);
     patternMap.set(p.pattern, existing);
@@ -118,8 +141,10 @@ export async function getDashboardStats(): Promise<ProblemStats> {
 
   // ── This week / month ──────────────────────────────────────
   const now = new Date();
-  const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
-  const monthAgo = new Date(now); monthAgo.setDate(now.getDate() - 30);
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+  const monthAgo = new Date(now);
+  monthAgo.setDate(now.getDate() - 30);
 
   const total_this_week = problems.filter((p) => {
     const d = p.solved_at ? new Date(p.solved_at) : null;
@@ -202,15 +227,21 @@ function computeStreaks(activity: DailyActivity[]): {
 // ── Empty stats fallback ──────────────────────────────────────
 function emptyStats(): ProblemStats {
   return {
-    total: 0, solved: 0, attempted: 0, needs_revision_count: 0,
+    total: 0,
+    solved: 0,
+    attempted: 0,
+    needs_revision_count: 0,
     by_platform: [],
     by_difficulty: { easy: 0, medium: 0, hard: 0, unknown: 0 },
     by_solve_help: { no_help: 0, hints: 0, saw_solution: 0 },
-    by_tag: [], by_pattern: [],
+    by_tag: [],
+    by_pattern: [],
     daily_activity: [],
-    current_streak: 0, longest_streak: 0,
+    current_streak: 0,
+    longest_streak: 0,
     avg_confidence: 0,
-    total_this_week: 0, total_this_month: 0,
+    total_this_week: 0,
+    total_this_month: 0,
   };
 }
 
@@ -225,11 +256,9 @@ function emptyStats(): ProblemStats {
 export async function getProblems(
   filters: Partial<ProblemFilters> = {},
   page = 1,
-  pageSize = 25
+  pageSize = 25,
 ): Promise<{ problems: Problem[]; total: number }> {
-  let query = supabase
-    .from("problems")
-    .select("*", { count: "exact" });
+  let query = supabase.from("problems").select("*", { count: "exact" });
 
   // Apply filters
   if (filters.platform && filters.platform !== "all") {
@@ -237,7 +266,7 @@ export async function getProblems(
   }
   if (filters.difficulty && filters.difficulty !== "all") {
     query = query.or(
-      `difficulty.eq.${filters.difficulty},user_difficulty.eq.${filters.difficulty}`
+      `difficulty.eq.${filters.difficulty},user_difficulty.eq.${filters.difficulty}`,
     );
   }
   if (filters.status && filters.status !== "all") {
@@ -276,7 +305,9 @@ export async function getProblems(
 /**
  * Fetch a single problem by problem_key.
  */
-export async function getProblemByKey(problem_key: string): Promise<Problem | null> {
+export async function getProblemByKey(
+  problem_key: string,
+): Promise<Problem | null> {
   const { data, error } = await supabase
     .from("problems")
     .select("*")
@@ -305,7 +336,8 @@ export async function getRevisionDue(): Promise<Problem[]> {
     .not("sm2_next_review", "is", null)
     .order("sm2_next_review", { ascending: true });
 
-  if (error) throw new Error(`Failed to fetch revision queue: ${error.message}`);
+  if (error)
+    throw new Error(`Failed to fetch revision queue: ${error.message}`);
   return data ?? [];
 }
 
@@ -338,7 +370,8 @@ export async function getRecentProblems(limit = 5): Promise<Problem[]> {
     .order("solved_at", { ascending: false })
     .limit(limit);
 
-  if (error) throw new Error(`Failed to fetch recent problems: ${error.message}`);
+  if (error)
+    throw new Error(`Failed to fetch recent problems: ${error.message}`);
   return data ?? [];
 }
 
@@ -356,7 +389,8 @@ export async function getSubmissionHistory(problem_key: string) {
     .eq("problem_key", problem_key)
     .order("submitted_at", { ascending: false });
 
-  if (error) throw new Error(`Failed to fetch submission history: ${error.message}`);
+  if (error)
+    throw new Error(`Failed to fetch submission history: ${error.message}`);
   return data ?? [];
 }
 
@@ -368,6 +402,54 @@ export async function getSubmissionHistory(problem_key: string) {
  * Update SM2 state after a revision session.
  * Called when user clicks "I Revised It" on the Revision page.
  */
+// export async function updateSM2AfterRevision(
+//   problem_key: string,
+//   sm2_interval: number,
+//   sm2_ease_factor: number,
+//   sm2_repetitions: number,
+//   sm2_next_review: string,
+// ): Promise<void> {
+//   const { error } = await supabase
+//     .from("problems")
+//     .update({
+//       sm2_interval,
+//       sm2_ease_factor,
+//       sm2_repetitions,
+//       sm2_next_review,
+//       updated_at: new Date().toISOString(),
+//     } as any)
+//     .eq("problem_key", problem_key);
+
+//   if (error) throw new Error(`Failed to update SM2: ${error.message}`);
+// }
+
+/**
+ * Update any fields on a problem (for inline editing on detail page).
+ */
+
+
+// Fetches all problems due for review today or overdue.
+// Sorted: most overdue first, then by lowest ease factor (hardest problems first).
+
+export async function getRevisionQueue(): Promise<Problem[]> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("problems")
+    .select("*")
+    .lte("sm2_next_review", today) // due today or earlier
+    .eq("status", "solved") // only solved problems need revision
+    .order("sm2_next_review", { ascending: true }) // most overdue first
+    .order("sm2_ease_factor", { ascending: true }); // hardest to recall first
+
+  if (error) {
+    console.error("getRevisionQueue error:", error);
+    return [];
+  }
+
+  return (data ?? []) as Problem[];
+}
+
 export async function updateSM2AfterRevision(
   problem_key: string,
   sm2_interval: number,
@@ -405,4 +487,30 @@ export async function updateProblem(
 
   if (error) throw new Error(`Failed to update problem: ${error.message}`);
   return data;
+}
+
+
+
+/**
+ * Fetch problems scheduled for SM2 review in the next N days.
+ * Used for the revision schedule view.
+ */
+export async function getUpcomingRevisions(days = 14): Promise<Problem[]> {
+  const today = new Date();
+  const future = new Date(today);
+  future.setDate(today.getDate() + days);
+
+  const todayStr  = today.toISOString().split("T")[0];
+  const futureStr = future.toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("problems")
+    .select("*")
+    .gt("sm2_next_review", todayStr)   // strictly after today (today = due now)
+    .lte("sm2_next_review", futureStr)
+    .not("sm2_next_review", "is", null)
+    .order("sm2_next_review", { ascending: true });
+
+  if (error) throw new Error(`Failed to fetch upcoming revisions: ${error.message}`);
+  return data ?? [];
 }
