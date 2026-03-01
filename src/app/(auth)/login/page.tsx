@@ -141,8 +141,9 @@ function OAuthButton({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const [loadingProvider, setLoadingProvider] = useState("github" | "google" | (null > null))
-  const [error, setError] = useState<string | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<
+    "github" | "google" | null
+  >(null);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
   const authFailed = searchParams.get("error") === "auth_failed";
@@ -250,7 +251,7 @@ export default function LoginPage() {
               letterSpacing: "-0.01em",
             }}
           >
-            DSA Tracker
+            Memoize
           </span>
         </div>
 

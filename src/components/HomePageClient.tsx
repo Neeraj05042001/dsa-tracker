@@ -159,7 +159,7 @@ function MiniDashboard() {
           ))}
         </div>
         <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 4, fontFamily: "var(--font-mono)" }}>
-          dsa-tracker.app/dashboard
+          memoize.app/dashboard
         </span>
       </div>
 
@@ -336,7 +336,7 @@ export default function HomePage({ user }: { user?: NavUser }) {
             </svg>
           </div>
           <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-            DSA Tracker
+            Memoize
           </span>
         </div>
 
@@ -535,12 +535,12 @@ export default function HomePage({ user }: { user?: NavUser }) {
               marginBottom: 20,
               animation: "fadeIn 0.6s 100ms both",
             }}>
-              Stop letting solved{" "}
+              Stop forgetting what you&apos;ve{" "}
               <span style={{
                 color: "var(--accent)",
                 textShadow: "0 0 30px rgba(0,212,170,0.4)",
               }}>
-                problems
+                already solved.
               </span>
               {" "}go to waste.
             </h1>
@@ -554,7 +554,7 @@ export default function HomePage({ user }: { user?: NavUser }) {
               maxWidth: 460,
               animation: "fadeIn 0.6s 200ms both",
             }}>
-              DSA Tracker auto-captures every LeetCode & Codeforces solve,
+             Memoize auto-captures every LeetCode & Codeforces solve,
               schedules smart spaced reviews, and shows exactly what to fix
               before your next interview.
             </p>
@@ -1320,10 +1320,10 @@ export default function HomePage({ user }: { user?: NavUser }) {
             </svg>
           </div>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-            DSA Tracker
+            Memoize
           </span>
           <span style={{ fontSize: 12, color: "var(--text-subtle)", marginLeft: 8 }}>
-            — Built for engineers who take preparation seriously
+            — Solve once. Master forever.
           </span>
         </div>
 
