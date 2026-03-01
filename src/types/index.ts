@@ -11,6 +11,7 @@ export type Confidence = "low" | "medium" | "high";
 
 export interface Problem {
   id: string;
+  user_id: string | null;
   problem_name: string;
   platform: Platform;
   problem_key: string;
@@ -45,6 +46,7 @@ export interface Problem {
 
 export interface SubmissionHistory {
   id: string;
+  user_id: string | null;
   problem_key: string;
   platform: Platform;
   submission_id: string | null;

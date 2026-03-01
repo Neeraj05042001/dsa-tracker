@@ -13,7 +13,6 @@ import {
   confidenceToScore,
 } from "@/types";
 
-
 // ============================================================
 // OVERVIEW / STATS QUERIES
 // ============================================================
@@ -24,12 +23,13 @@ import {
  */
 export async function getDashboardStats(): Promise<ProblemStats> {
   const supabase = await createSupabaseServerClient();
-  const { data: problems, error } = await supabase
+  const { data: problemsRaw, error } = await supabase
     .from("problems")
     .select("*")
     .order("solved_at", { ascending: false });
 
   if (error) throw new Error(`Failed to fetch stats: ${error.message}`);
+  const problems = problemsRaw as Problem[] | null;
   if (!problems || problems.length === 0) return emptyStats();
 
   const solved = problems.filter((p) => p.status === "solved");
@@ -301,7 +301,7 @@ export async function getProblems(
   const { data, error, count } = await query;
   if (error) throw new Error(`Failed to fetch problems: ${error.message}`);
 
-  return { problems: data ?? [], total: count ?? 0 };
+  return { problems: (data ?? []) as Problem[], total: count ?? 0 };
 }
 
 /**
@@ -410,11 +410,9 @@ export async function getSubmissionHistory(problem_key: string) {
  * Called when user clicks "I Revised It" on the Revision page.
  */
 
-
 /**
  * Update any fields on a problem (for inline editing on detail page).
  */
-
 
 // Fetches all problems due for review today or overdue.
 // Sorted: most overdue first, then by lowest ease factor (hardest problems first).
@@ -444,10 +442,10 @@ export async function updateSM2AfterRevision(
   sm2_interval: number,
   sm2_ease_factor: number,
   sm2_repetitions: number,
-  sm2_next_review: string
+  sm2_next_review: string,
 ): Promise<void> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("problems")
     .update({
       sm2_interval,
@@ -455,7 +453,7 @@ export async function updateSM2AfterRevision(
       sm2_repetitions,
       sm2_next_review,
       updated_at: new Date().toISOString(),
-    } as any)
+    })
     .eq("problem_key", problem_key);
 
   if (error) throw new Error(`Failed to update SM2: ${error.message}`);
@@ -466,12 +464,12 @@ export async function updateSM2AfterRevision(
  */
 export async function updateProblem(
   problem_key: string,
-  updates: Partial<Problem>
+  updates: Partial<Problem>,
 ): Promise<Problem> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("problems")
-    .update({ ...updates, updated_at: new Date().toISOString() } as any)
+    .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("problem_key", problem_key)
     .select()
     .single();
@@ -479,8 +477,6 @@ export async function updateProblem(
   if (error) throw new Error(`Failed to update problem: ${error.message}`);
   return data;
 }
-
-
 
 /**
  * Fetch problems scheduled for SM2 review in the next N days.
@@ -492,17 +488,18 @@ export async function getUpcomingRevisions(days = 14): Promise<Problem[]> {
   const future = new Date(today);
   future.setDate(today.getDate() + days);
 
-  const todayStr  = today.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split("T")[0];
   const futureStr = future.toISOString().split("T")[0];
 
   const { data, error } = await supabase
     .from("problems")
     .select("*")
-    .gt("sm2_next_review", todayStr)   // strictly after today (today = due now)
+    .gt("sm2_next_review", todayStr) // strictly after today (today = due now)
     .lte("sm2_next_review", futureStr)
     .not("sm2_next_review", "is", null)
     .order("sm2_next_review", { ascending: true });
 
-  if (error) throw new Error(`Failed to fetch upcoming revisions: ${error.message}`);
+  if (error)
+    throw new Error(`Failed to fetch upcoming revisions: ${error.message}`);
   return data ?? [];
 }
