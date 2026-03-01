@@ -31,10 +31,11 @@ export default async function ProblemDetailPage({ params }: Props) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const problem = await getProblemByKey(params.key);
+  const { key } = await params;
+  const problem = await getProblemByKey(key);
   return {
-    title: problem
-      ? `${problem.problem_name} — DSA Tracker`
-      : "Problem Not Found — DSA Tracker",
+   title: problem
+      ? `${problem.problem_name} — Memoize`
+      : "Problem Not Found — Memoize",
   };
 }
