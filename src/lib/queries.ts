@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase";
 import {
   Problem,
   Platform,
@@ -23,6 +23,7 @@ import {
  * Pulls all problems once and computes everything client-side.
  */
 export async function getDashboardStats(): Promise<ProblemStats> {
+  const supabase = await createSupabaseServerClient();
   const { data: problems, error } = await supabase
     .from("problems")
     .select("*")
@@ -258,6 +259,7 @@ export async function getProblems(
   page = 1,
   pageSize = 25,
 ): Promise<{ problems: Problem[]; total: number }> {
+  const supabase = await createSupabaseServerClient();
   let query = supabase.from("problems").select("*", { count: "exact" });
 
   // Apply filters
@@ -308,6 +310,7 @@ export async function getProblems(
 export async function getProblemByKey(
   problem_key: string,
 ): Promise<Problem | null> {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("problems")
     .select("*")
@@ -327,6 +330,7 @@ export async function getProblemByKey(
  * sm2_next_review <= today AND (needs_revision = true OR sm2_next_review is set)
  */
 export async function getRevisionDue(): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
   const today = new Date().toISOString().split("T")[0];
 
   const { data, error } = await supabase
@@ -345,6 +349,7 @@ export async function getRevisionDue(): Promise<Problem[]> {
  * Fetch all problems marked needs_revision = true.
  */
 export async function getRevisionList(): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("problems")
     .select("*")
@@ -363,6 +368,7 @@ export async function getRevisionList(): Promise<Problem[]> {
  * Fetch the N most recently solved problems.
  */
 export async function getRecentProblems(limit = 5): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("problems")
     .select("*")
@@ -383,6 +389,7 @@ export async function getRecentProblems(limit = 5): Promise<Problem[]> {
  * Fetch submission history for a single problem.
  */
 export async function getSubmissionHistory(problem_key: string) {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("submission_history")
     .select("*")
@@ -402,26 +409,7 @@ export async function getSubmissionHistory(problem_key: string) {
  * Update SM2 state after a revision session.
  * Called when user clicks "I Revised It" on the Revision page.
  */
-// export async function updateSM2AfterRevision(
-//   problem_key: string,
-//   sm2_interval: number,
-//   sm2_ease_factor: number,
-//   sm2_repetitions: number,
-//   sm2_next_review: string,
-// ): Promise<void> {
-//   const { error } = await supabase
-//     .from("problems")
-//     .update({
-//       sm2_interval,
-//       sm2_ease_factor,
-//       sm2_repetitions,
-//       sm2_next_review,
-//       updated_at: new Date().toISOString(),
-//     } as any)
-//     .eq("problem_key", problem_key);
 
-//   if (error) throw new Error(`Failed to update SM2: ${error.message}`);
-// }
 
 /**
  * Update any fields on a problem (for inline editing on detail page).
@@ -432,6 +420,7 @@ export async function getSubmissionHistory(problem_key: string) {
 // Sorted: most overdue first, then by lowest ease factor (hardest problems first).
 
 export async function getRevisionQueue(): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
   const today = new Date().toISOString().split("T")[0];
 
   const { data, error } = await supabase
@@ -457,6 +446,7 @@ export async function updateSM2AfterRevision(
   sm2_repetitions: number,
   sm2_next_review: string
 ): Promise<void> {
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("problems")
     .update({
@@ -478,6 +468,7 @@ export async function updateProblem(
   problem_key: string,
   updates: Partial<Problem>
 ): Promise<Problem> {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("problems")
     .update({ ...updates, updated_at: new Date().toISOString() } as any)
@@ -496,6 +487,7 @@ export async function updateProblem(
  * Used for the revision schedule view.
  */
 export async function getUpcomingRevisions(days = 14): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
   const today = new Date();
   const future = new Date(today);
   future.setDate(today.getDate() + days);

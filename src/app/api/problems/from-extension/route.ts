@@ -10,7 +10,7 @@ import {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 export async function OPTIONS() {
@@ -36,8 +36,45 @@ function normalizeDifficulty(
 
 export async function POST(request: NextRequest) {
   try {
+    // ==================== AUTH ====================
+    // Extract JWT from Authorization: Bearer <token> header
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "").trim();
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized — no token provided" },
+        { status: 401, headers: corsHeaders },
+      );
+    }
+
+    // Validate the JWT and get the user
+    // We create a client authenticated as this user so RLS applies automatically
+    const { createClient } = await import("@supabase/supabase-js");
+    const authedClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
+    );
+
+    const {
+      data: { user },
+      error: authError,
+    } = await authedClient.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized — invalid or expired token" },
+        { status: 401, headers: corsHeaders },
+      );
+    }
+
+    const userId = user.id;
+    console.log("[API] Authenticated user:", user.email);
+
     const body: ExtensionPayload = await request.json();
     console.log("[API] Received from extension:", body);
+    
 
     // ==================== VALIDATE ====================
     if (!body.problem_name?.trim()) {
@@ -66,6 +103,7 @@ export async function POST(request: NextRequest) {
     );
 
     const problemData = {
+      user_id: userId,
       problem_name: body.problem_name.trim(),
       platform: body.platform,
       problem_key: body.problem_key,
@@ -93,10 +131,11 @@ export async function POST(request: NextRequest) {
     // ==================== CHECK EXISTING ====================
     // Fetch existing SM2 state so re-submissions continue the schedule
     // instead of resetting from zero
-    const { data: existing } = await supabase
+    const { data: existing } = await authedClient
       .from("problems")
       .select("id, problem_key, sm2_interval, sm2_ease_factor, sm2_repetitions")
       .eq("problem_key", body.problem_key)
+      .eq("user_id", userId)
       .single();
 
     // ==================== CALCULATE SM2 ====================
@@ -132,15 +171,16 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       console.log("[API] Updating existing problem:", body.problem_key);
-      ({ data, error } = await supabase
+     ({ data, error } = await authedClient
         .from("problems")
         .update({ ...dataWithSM2, updated_at: new Date().toISOString() } as any)
         .eq("problem_key", body.problem_key)
+        .eq("user_id", userId)
         .select()
         .single());
     } else {
       console.log("[API] Inserting new problem:", body.problem_key);
-      ({ data, error } = await supabase
+      ({ data, error } = await authedClient
         .from("problems")
         .insert(dataWithSM2 as any)
         .select()
@@ -157,7 +197,8 @@ export async function POST(request: NextRequest) {
 
     // ==================== LOG HISTORY ====================
     if (body.submission_id || body.status) {
-      await supabase.from("submission_history").insert({
+      await authedClient.from("submission_history").insert({
+        user_id: userId,
         problem_key: body.problem_key,
         platform: body.platform,
         submission_id: body.submission_id || null,
@@ -165,7 +206,7 @@ export async function POST(request: NextRequest) {
         language: body.language || null,
         runtime: body.runtime || null,
         memory: body.memory || null,
-        confidence: body.confidence || null, 
+        confidence: body.confidence || null,
         submitted_at: body.solved_at || new Date().toISOString(),
       } as any);
     }
@@ -181,9 +222,11 @@ export async function POST(request: NextRequest) {
       { status: 201, headers: corsHeaders },
     );
   } catch (error) {
-    console.error("[API] Unexpected error:", error);
+    const err = error as Error;
+    console.error("[API] Unexpected error:", err?.message || error);
+    console.error("[API] Stack:", err?.stack);
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { success: false, message: err?.message || "Internal server error" },
       { status: 500, headers: corsHeaders },
     );
   }

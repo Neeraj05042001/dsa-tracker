@@ -93,12 +93,30 @@ function LogoMark() {
   );
 }
 
-// ── Main Sidebar ───────────────────────────────────────────────
-interface SidebarProps {
-  revisionDueCount?: number;
+// ── Sign-out icon ──────────────────────────────────────────────
+function IconLogOut({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  );
 }
 
-export function Sidebar({ revisionDueCount = 0 }: SidebarProps) {
+// ── Main Sidebar ───────────────────────────────────────────────
+interface SidebarUser {
+  name: string;
+  email: string;
+  avatar_url?: string;
+}
+
+interface SidebarProps {
+  revisionDueCount?: number;
+  user?: SidebarUser;
+}
+
+export function Sidebar({ revisionDueCount = 0, user }: SidebarProps) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
@@ -109,6 +127,7 @@ export function Sidebar({ revisionDueCount = 0 }: SidebarProps) {
       style={{ userSelect: "none" }}
     >
       {/* ── Logo ── */}
+     <Link href="/">
       <div style={{
         padding: "16px 14px 12px",
         display: "flex",
@@ -130,6 +149,7 @@ export function Sidebar({ revisionDueCount = 0 }: SidebarProps) {
           </span>
         )}
       </div>
+     </Link>
 
       {/* ── Nav ── */}
       <nav style={{ padding: "10px 8px", flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -190,6 +210,101 @@ export function Sidebar({ revisionDueCount = 0 }: SidebarProps) {
         flexDirection: "column",
         gap: 4,
       }}>
+        {/* ── User card ── */}
+        {user && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: collapsed ? "6px 4px" : "8px 10px",
+            borderRadius: "var(--radius-md)",
+            marginBottom: 4,
+            justifyContent: collapsed ? "center" : "flex-start",
+          }}>
+            {/* Avatar */}
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                width={28}
+                height={28}
+                style={{
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  border: "1.5px solid var(--border-mid)",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "var(--accent-muted)",
+                border: "1.5px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--accent)",
+                fontFamily: "var(--font-mono)",
+              }}>
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            {/* Name + email */}
+            {!collapsed && (
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}>
+                  {user.name}
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  fontFamily: "var(--font-mono)",
+                }}>
+                  {user.email}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sign-out */}
+        {user && (
+          <form action="/auth/signout" method="POST">
+            <button
+              type="submit"
+              className="sidebar-nav-item"
+              style={{
+                border: "none",
+                background: "none",
+                width: "100%",
+                textAlign: "left",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+              }}
+              title={collapsed ? "Sign out" : undefined}
+            >
+              <IconLogOut size={17} />
+              {!collapsed && <span style={{ fontSize: 13 }}>Sign out</span>}
+            </button>
+          </form>
+        )}
+
         {/* Extension status */}
         {!collapsed && (
           <div style={{
