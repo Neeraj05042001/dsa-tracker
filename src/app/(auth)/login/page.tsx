@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 // import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -140,7 +140,7 @@ function OAuthButton({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [loadingProvider, setLoadingProvider] = useState<
     "github" | "google" | null
   >(null);
@@ -395,5 +395,13 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ background: "var(--bg-base)", minHeight: "100vh" }} />}>
+      <LoginPageInner />
+    </Suspense>
   );
 }
