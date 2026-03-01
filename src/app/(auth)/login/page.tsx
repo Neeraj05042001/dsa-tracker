@@ -144,6 +144,7 @@ export default function LoginPage() {
   const [loadingProvider, setLoadingProvider] = useState<
     "github" | "google" | null
   >(null);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
   const authFailed = searchParams.get("error") === "auth_failed";
