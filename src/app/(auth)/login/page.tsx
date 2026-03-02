@@ -299,6 +299,23 @@ function LoginPageInner() {
             sublabel="Sign in with your Google account"
           />
         </div>
+        {/* Warning for ISP */}
+
+        {/* Network warning */}
+        <div style={{
+          marginTop: 14,
+          padding: "10px 14px",
+          background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
+          borderRadius: "var(--radius-md)",
+          fontSize: 11,
+          color: "var(--text-muted)",
+          lineHeight: 1.6,
+          textAlign: "center",
+        }}>
+          ⚠️ If login gets stuck or times out,<br />
+          switch to <strong style={{ color: "var(--text-secondary)" }}>mobile data</strong> or a different network and try again.
+        </div>
 
         {/* Error state */}
         {(error || authFailed) && (
