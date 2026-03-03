@@ -1,5 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase";
-import HomePageClient from "@/components/HomePageClient";
+// import HomePageClient from "@/components/HomePageClientss";
+// import HomePageClient from "@/components/HomePageClient";
+// import HomePageClient from "@/components/Homepage-3";
+// import HomePageClient from "@/components/HomepageClient-4";
+import HomePageClient from "@/components/HomePageClient-6";
 
 export default async function Page() {
   const supabase = await createSupabaseServerClient();
