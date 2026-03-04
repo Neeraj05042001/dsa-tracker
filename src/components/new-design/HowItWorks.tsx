@@ -149,7 +149,7 @@ const slideVariants = {
   center: { opacity: 1, y: 0  },
   exit:   { opacity: 0, y: -8 },
 };
-const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] };
+const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
 function PopupStateInfo() {
   return (

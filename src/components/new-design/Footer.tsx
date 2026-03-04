@@ -4,24 +4,31 @@ import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
+interface NavLink {
+  label: string;
+  href: string;
+  external?: boolean;
+  mono?: boolean;
+}
+
 const GDRIVE_LINK = "https://drive.google.com/your-zip-link-here";
 
-const NAV_LINKS = [
+const NAV_LINKS: { group: string; links: NavLink[] }[] = [
   {
     group: "Product",
     links: [
-      { label: "Features",     href: "#features"     },
+      { label: "Features", href: "#features" },
       { label: "How it works", href: "#how-it-works" },
-      { label: "Analytics",    href: "#analytics"    },
-      { label: "Dashboard",    href: "/dashboard"    },
+      { label: "Analytics", href: "#analytics" },
+      { label: "Dashboard", href: "/dashboard" },
     ],
   },
   {
     group: "Install",
     links: [
-      { label: "Add to Chrome",       href: GDRIVE_LINK,          external: true           },
-      { label: "chrome://extensions", href: "chrome://extensions", mono: true               },
-      { label: "GitHub",              href: "https://github.com", external: true            },
+      { label: "Add to Chrome", href: GDRIVE_LINK, external: true },
+      { label: "chrome://extensions", href: "chrome://extensions", mono: true },
+      { label: "GitHub", href: "https://github.com", external: true },
     ],
   },
 ];
@@ -220,36 +227,84 @@ export default function Footer() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-
           {/* ── Top ───────────────────────────────────────────── */}
           <div className="footer-top">
-
             {/* Brand */}
             <div className="footer-brand">
               <Link href="/" className="footer-logo">
-                <div style={{
-                  width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                  background: "var(--accent-muted)",
-                  border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    flexShrink: 0,
+                    background: "var(--accent-muted)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 5L1 8L3 11"  stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M13 5L15 8L13 11" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M10 3L6 13"       stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
+                    <path
+                      d="M3 5L1 8L3 11"
+                      stroke="var(--accent)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M13 5L15 8L13 11"
+                      stroke="var(--accent)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M10 3L6 13"
+                      stroke="var(--accent)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.2,
+                    }}
+                  >
                     Memoize
                   </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      color: "var(--text-muted)",
+                      marginTop: 1,
+                    }}
+                  >
                     Solve once. Remember forever.
                   </div>
                 </div>
               </Link>
 
-              <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.65, margin: 0, maxWidth: 240 }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  maxWidth: 240,
+                }}
+              >
                 SM-2 spaced repetition for engineers grinding FAANG interviews.
                 Auto-captures. Schedules. Never forgets.
               </p>
@@ -257,28 +312,55 @@ export default function Footer() {
               {/* Platform chips */}
               <div style={{ display: "flex", gap: 6 }}>
                 {[
-                  { label: "LeetCode",   color: "var(--lc-color)", muted: "var(--lc-muted)" },
-                  { label: "Codeforces", color: "var(--cf-color)", muted: "var(--cf-muted)" },
+                  {
+                    label: "LeetCode",
+                    color: "var(--lc-color)",
+                    muted: "var(--lc-muted)",
+                  },
+                  {
+                    label: "Codeforces",
+                    color: "var(--cf-color)",
+                    muted: "var(--cf-muted)",
+                  },
                 ].map((p) => (
-                  <div key={p.label} style={{
-                    padding: "3px 9px", borderRadius: "var(--radius-pill)",
-                    background: p.muted,
-                    border: `1px solid color-mix(in srgb, ${p.color} 25%, transparent)`,
-                    fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, color: p.color,
-                  }}>{p.label}</div>
+                  <div
+                    key={p.label}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: "var(--radius-pill)",
+                      background: p.muted,
+                      border: `1px solid color-mix(in srgb, ${p.color} 25%, transparent)`,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      fontWeight: 600,
+                      color: p.color,
+                    }}
+                  >
+                    {p.label}
+                  </div>
                 ))}
               </div>
 
               {/* Primary CTA */}
               <a
-                href={GDRIVE_LINK} target="_blank" rel="noopener noreferrer"
+                href={GDRIVE_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: 7,
-                  padding: "9px 16px", borderRadius: "var(--radius-md)",
-                  background: "var(--accent)", color: "#0d0d0f",
-                  fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700,
-                  textDecoration: "none", transition: "all var(--transition-fast)",
-                  alignSelf: "flex-start", marginTop: 4,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "9px 16px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--accent)",
+                  color: "#0d0d0f",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  transition: "all var(--transition-fast)",
+                  alignSelf: "flex-start",
+                  marginTop: 4,
                 }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget as HTMLElement;
@@ -295,9 +377,24 @@ export default function Footer() {
               >
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="2.6" fill="currentColor" />
-                  <path d="M7 4.4H12.5C11.6 2.6 9.5 1.4 7 1.4C4.5 1.4 2.4 2.6 1.5 4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M2.4 5.5L5.2 9.8C5.7 10.6 6.3 11.2 7 11.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M11.6 5.5L8.8 9.8C8.3 10.6 7.7 11.2 7 11.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <path
+                    d="M7 4.4H12.5C11.6 2.6 9.5 1.4 7 1.4C4.5 1.4 2.4 2.6 1.5 4.4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M2.4 5.5L5.2 9.8C5.7 10.6 6.3 11.2 7 11.4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M11.6 5.5L8.8 9.8C8.3 10.6 7.7 11.2 7 11.4"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
                 </svg>
                 Add to Chrome — Free
               </a>
@@ -315,19 +412,38 @@ export default function Footer() {
                 <div className="footer-group-label">{group.group}</div>
                 {group.links.map((link) =>
                   link.external ? (
-                    <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
-                      className={`footer-link${(link as any).mono ? " mono" : ""}`}>
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`footer-link${(link).mono ? " mono" : ""}`}
+                    >
                       {link.label}
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M2 2h6v6M8 2L2 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 2h6v6M8 2L2 8"
+                          stroke="currentColor"
+                          strokeWidth="1.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     </a>
                   ) : (
-                    <Link key={link.label} href={link.href}
-                      className={`footer-link${(link as any).mono ? " mono" : ""}`}>
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className={`footer-link${(link as any).mono ? " mono" : ""}`}
+                    >
                       {link.label}
                     </Link>
-                  )
+                  ),
                 )}
               </motion.div>
             ))}
@@ -342,13 +458,23 @@ export default function Footer() {
               <div className="footer-group-label">Account</div>
               <Link href="/login" className="footer-auth-btn">
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <circle cx="6.5" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-                  <path d="M1.5 11.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  <circle
+                    cx="6.5"
+                    cy="4.5"
+                    r="2.5"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                  />
+                  <path
+                    d="M1.5 11.5c0-2.2 2.2-4 5-4s5 1.8 5 4"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
                 </svg>
                 Sign in / Sign up
               </Link>
             </motion.div>
-
           </div>
 
           {/* ── Bottom bar ─────────────────────────────────────── */}
@@ -358,29 +484,84 @@ export default function Footer() {
             animate={inView ? { opacity: 1 } : {}}
             transition={{ duration: 0.4, delay: 0.35 }}
           >
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-subtle)" }}>
-              © {new Date().getFullYear()} Memoize · Built for engineers, by engineers.
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: "var(--text-subtle)",
+              }}
+            >
+              © {new Date().getFullYear()} Memoize · Built for engineers, by
+              engineers.
             </div>
 
             {/* Status row — hidden on mobile */}
-            <div className="footer-status" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div
+              className="footer-status"
+              style={{ display: "flex", alignItems: "center", gap: 16 }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <motion.div
-                  animate={reduce ? {} : { scale: [1, 1.4, 1], opacity: [1, 0.4, 1] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                  style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--easy)", boxShadow: "0 0 5px var(--easy)" }}
+                  animate={
+                    reduce ? {} : { scale: [1, 1.4, 1], opacity: [1, 0.4, 1] }
+                  }
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: "var(--easy)",
+                    boxShadow: "0 0 5px var(--easy)",
+                  }}
                 />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-subtle)" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--text-subtle)",
+                  }}
+                >
                   All systems operational
                 </span>
               </div>
-              <div style={{ width: 1, height: 12, background: "var(--border-subtle)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-subtle)" }}>v0.1.0-beta</span>
-              <div style={{ width: 1, height: 12, background: "var(--border-subtle)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-subtle)" }}>SM-2 · Wozniak, 1987</span>
+              <div
+                style={{
+                  width: 1,
+                  height: 12,
+                  background: "var(--border-subtle)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--text-subtle)",
+                }}
+              >
+                v0.1.0-beta
+              </span>
+              <div
+                style={{
+                  width: 1,
+                  height: 12,
+                  background: "var(--border-subtle)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--text-subtle)",
+                }}
+              >
+                SM-2 · Wozniak, 1987
+              </span>
             </div>
           </motion.div>
-
         </motion.div>
 
         {/* ── Glowing stroke wordmark ──────────────────────────── */}
@@ -393,7 +574,6 @@ export default function Footer() {
         >
           Memoize
         </motion.div>
-
       </footer>
     </>
   );

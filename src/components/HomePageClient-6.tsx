@@ -15,7 +15,7 @@ interface User {
   user_metadata?: { avatar_url?: string; full_name?: string; name?: string };
 }
 interface Props {
-  user: User | null;
+  user?: User | null;
 }
 
 export default function HomePageClient({ user }: Props) {
