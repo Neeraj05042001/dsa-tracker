@@ -5,6 +5,17 @@ export type Difficulty = "easy" | "medium" | "hard";
 export type Status = "solved" | "attempted";
 export type SolveHelp = "no_help" | "hints" | "saw_solution";
 export type TimeTaken = "<15" | "15-30" | "30-60" | ">60";
+// Imports for cf-group data
+export type ProblemSource = "manual" | "leetcode" | "codeforces" | "cf_group";
+export type CfSyncStatus =
+  | "never"
+  | "pending"
+  | "running"
+  | "success"
+  | "failed"
+  | "rate_limited";
+export type CfProblemStatus = "solved" | "attempted" | "todo";
+// upper three are imports for cf-group data
 export type Confidence = "low" | "medium" | "high";
 
 // ==================== CORE DATABASE TYPES ====================
@@ -36,6 +47,13 @@ export interface Problem {
   solved_at: string | null;
   created_at: string;
   updated_at: string;
+  // CF Groups context (null for non-group problems)
+  source: ProblemSource;
+  cf_group_code: string | null;
+  cf_contest_id: string | null;
+  cf_problem_idx: string | null;
+  is_duplicate: boolean;
+  duplicate_of: string | null;
 
   // SM2 Spaced Repetition fields (added in Step 0 migration)
   sm2_interval: number; // days until next review (default: 1)
@@ -78,6 +96,13 @@ export interface ExtensionPayload {
   memory?: string | null;
   submission_id?: string | null;
   submission_url?: string | null;
+
+  // CF Group context — sent by extension when on a group page
+  source?: ProblemSource;
+  cf_group_code?: string | null;
+  cf_contest_id?: string | null;
+  cf_problem_idx?: string | null;
+  // Above 4 cf-group
   solved_at?: string | null;
 
   // User manual entries from popup
@@ -327,3 +352,75 @@ export const PROBLEM_PATTERNS = [
 ] as const;
 
 export type ProblemPattern = (typeof PROBLEM_PATTERNS)[number];
+
+
+// ==================== CF GROUPS FEATURE TYPES ====================
+
+export interface CfGroup {
+  id: string;
+  user_id: string;
+  group_code: string;
+  group_name: string;
+  group_url: string | null;
+  total_problems: number;
+  solved_count: number;
+  attempted_count: number;
+  todo_count: number;
+  progress_pct: number;
+  last_synced: string | null;
+  sync_status: CfSyncStatus;
+  created_at: string;
+}
+
+export interface CfGroupProblem {
+  id: string;
+  group_id: string;
+  user_id: string;
+  contest_id: string;
+  problem_index: string;
+  problem_name: string;
+  problem_url: string;
+  cf_rating: number | null;
+  cf_status: CfProblemStatus;
+  solved_at: string | null;
+  tracker_problem_id: string | null;
+}
+
+export interface UserCfAuth {
+  user_id: string;
+  cf_handle: string;
+  encrypted_session: string;
+  session_updated_at: string;
+  is_session_valid: boolean;
+  last_sync_attempt: string | null;
+  consecutive_failures: number;
+}
+
+export interface CfSyncLog {
+  id: string;
+  user_id: string;
+  group_code: string | null;
+  triggered_by: 'manual' | 'cron' | 'extension';
+  status: 'success' | 'failed' | 'rate_limited' | 'partial';
+  groups_synced: number;
+  problems_synced: number;
+  error_message: string | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+// API response types for CF endpoints
+export interface CfGroupsResponse {
+  success: boolean;
+  groups: CfGroup[];
+  last_synced: string | null;
+  sync_status: CfSyncStatus;
+}
+
+export interface CfSyncResponse {
+  success: boolean;
+  message: string;
+  groups_synced?: number;
+  problems_synced?: number;
+  partial?: boolean;       // true if CF rate-limited mid-sync
+}
