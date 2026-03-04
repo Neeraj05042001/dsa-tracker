@@ -11,6 +11,7 @@ import Problem         from "./new-design/Problem";
 import StatsStrip      from "./new-design/StatsStrip";
 
 export interface NavUser {
+  readiness_score?: number; 
   name: string;
   email: string;
   avatar_url?: string;
