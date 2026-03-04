@@ -1,5 +1,9 @@
 "use client";
 
+import AnalyticsPreview from "./new-design/AnalyticsPreview";
+import Features from "./new-design/Features";
+import FinalCTA from "./new-design/FinalCTA";
+import Footer from "./new-design/Footer";
 import Hero from "./new-design/Hero";
 import HowItWorks from "./new-design/HowItWorks";
 import Navbar from "./new-design/Navbar";
@@ -23,6 +27,10 @@ export default function HomePageClient({ user }: Props) {
         <StatsStrip />
         <Problem />
         <HowItWorks/>
+        <Features/>
+        <AnalyticsPreview/>
+        <FinalCTA/>
+        <Footer/>
         {/* ... */}
       </main>
     </>
