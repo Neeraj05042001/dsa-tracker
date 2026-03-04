@@ -21,7 +21,7 @@ export default async function Page() {
         email: user.email ?? "",
         avatar_url: user.user_metadata?.avatar_url as string | undefined,
       }
-    : undefined;
+    : null;
 
   return <HomePageClient user={navUser} />;
 }

@@ -149,7 +149,7 @@ export default function Footer() {
           display: block;
           text-align: center;
           font-family: var(--font-sans);
-          font-size: clamp(68px, 13vw, 170px);
+          font-size: clamp(48px, 13vw, 170px);
           font-weight: 800;
           letter-spacing: -0.04em;
           white-space: nowrap;
@@ -187,6 +187,15 @@ export default function Footer() {
         /* ── Responsive ──────────────────────────────────────── */
 
         /* Tablet (≤900px): 2-col grid, brand spans full, account hidden */
+
+        @media (max-width: 1024px) {
+  .footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+  .footer-brand  { grid-column: 1 / -1; }
+  .footer-account { display: none; }
+}
         @media (max-width: 900px) {
           .footer-top {
             grid-template-columns: 1fr 1fr;
@@ -200,12 +209,17 @@ export default function Footer() {
           }
         }
 
+        @media (max-width: 768px) {
+  .footer-status { display: none; }
+}
+
         /* Mobile (≤520px): single col, nav groups hidden, just brand + CTA */
         @media (max-width: 520px) {
           .footer-top {
             grid-template-columns: 1fr;
             gap: 24px;
             padding-bottom: 28px;
+             border-bottom: none;
             
           }
           .footer-nav-group { display: none; }
@@ -417,7 +431,7 @@ export default function Footer() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`footer-link${(link).mono ? " mono" : ""}`}
+                      className={`footer-link${link.mono ? " mono" : ""}`}
                     >
                       {link.label}
                       <svg
