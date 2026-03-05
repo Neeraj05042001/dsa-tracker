@@ -299,7 +299,7 @@ function GroupCard({
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <a
-              href={group.group_url}
+              href={group.group_url ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               style={{
