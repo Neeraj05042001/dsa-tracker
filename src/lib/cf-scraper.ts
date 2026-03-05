@@ -146,6 +146,7 @@ async function scrapeGroupContests(
   userSubmissions: UserSubmission[],
 ): Promise<ScrapedContest[]> {
   const url = `${CF_BASE}/group/${groupCode}/contests`;
+    console.log('[CF Debug] Group code:', groupCode, '| Contests URL:', url)
   const html = await cfFetch(url, jsessionid);
   const contestIds = parseContestList(html);
   const contests: ScrapedContest[] = [];
@@ -256,6 +257,7 @@ function parseGroupList(
   while ((match = namePattern.exec(html)) !== null) {
     const code = match[1];
     const name = match[2].trim();
+     console.log('[CF Debug] Found group candidate:', code, name) 
 
     if (!seen.has(code) && name && code.length >= 6) {
       seen.add(code);
