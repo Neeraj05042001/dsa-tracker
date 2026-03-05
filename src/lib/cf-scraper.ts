@@ -212,6 +212,7 @@ function resolveStatus(
 // These are isolated here so they're easy to update if CF changes markup.
 
 function parseGroupList(html: string): Array<{ code: string; name: string; url: string }> {
+    console.log('[CF Debug] Group page HTML snippet:', html.substring(0, 2000)) 
   const groups: Array<{ code: string; name: string; url: string }> = []
 
   // CF group links look like: href="/group/XXXXX" or href="/group/XXXXX/contests"
