@@ -236,10 +236,12 @@ function resolveStatus(
 function parseGroupList(
   html: string,
 ): Array<{ code: string; name: string; url: string }> {
+  const bodyIdx = html.indexOf('<div class="datatable">');
   console.log(
-    "[CF Debug] Group page HTML snippet:",
-    html.substring(15000, 20000)
+    "[CF Debug] Group datatable:",
+    html.substring(bodyIdx, bodyIdx + 3000),
   );
+
   const groups: Array<{ code: string; name: string; url: string }> = [];
 
   // CF group links look like: href="/group/XXXXX" or href="/group/XXXXX/contests"
@@ -269,9 +271,10 @@ function parseGroupList(
 }
 
 function parseContestList(html: string): Array<{ id: string; name: string }> {
+  const bodyIdx = html.indexOf('<div class="datatable">');
   console.log(
-    "[CF Debug] Group page HTML snippet:",
-    html.substring(15000, 20000),
+    "[CF Debug] Contest datatable:",
+    html.substring(bodyIdx, bodyIdx + 3000),
   );
   const contests: Array<{ id: string; name: string }> = [];
 
@@ -298,9 +301,10 @@ function parseProblemList(
   groupCode: string,
   contestId: string,
 ): Array<Omit<ScrapedProblem, "status" | "solvedAt">> {
+  const bodyIdx = html.indexOf('<div class="datatable">');
   console.log(
-    "[CF Debug] Group page HTML snippet:",
-    html.substring(15000, 20000),
+    "[CF Debug] Problem datatable:",
+    html.substring(bodyIdx, bodyIdx + 3000),
   );
   const problems: Array<Omit<ScrapedProblem, "status" | "solvedAt">> = [];
 
