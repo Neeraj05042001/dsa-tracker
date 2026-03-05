@@ -238,7 +238,7 @@ function parseGroupList(
 ): Array<{ code: string; name: string; url: string }> {
   console.log(
     "[CF Debug] Group page HTML snippet:",
-    html.substring(3000, 6000),
+    html.substring(15000, 20000)
   );
   const groups: Array<{ code: string; name: string; url: string }> = [];
 
@@ -271,7 +271,7 @@ function parseGroupList(
 function parseContestList(html: string): Array<{ id: string; name: string }> {
   console.log(
     "[CF Debug] Group page HTML snippet:",
-    html.substring(3000, 6000),
+    html.substring(15000, 20000),
   );
   const contests: Array<{ id: string; name: string }> = [];
 
@@ -300,7 +300,7 @@ function parseProblemList(
 ): Array<Omit<ScrapedProblem, "status" | "solvedAt">> {
   console.log(
     "[CF Debug] Group page HTML snippet:",
-    html.substring(3000, 6000),
+    html.substring(15000, 20000),
   );
   const problems: Array<Omit<ScrapedProblem, "status" | "solvedAt">> = [];
 
