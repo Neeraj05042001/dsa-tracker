@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Sidebar, type SidebarUser } from "@/components/layout/Sidebar";
+// import { Sidebar, type SidebarUser } from "@/components/layout/Sidebar";
+import { Sidebar, SidebarUser } from "../new-responsive-dashboard/Sidebar";
 
 // ─── Breakpoints ──────────────────────────────────────────────────────────────
 const BP_MOBILE = 768;
