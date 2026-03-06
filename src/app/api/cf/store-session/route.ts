@@ -1,6 +1,5 @@
 // ==================== STORE CF SESSION ====================
-// Receives JSESSIONID from extension, encrypts it, stores in DB.
-// This is called once when user clicks "Sync Groups" in the popup.
+// Receives JSESSIONID + cf_clearance from extension, encrypts as JSON, stores in DB.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -21,7 +20,6 @@ export async function POST(request: NextRequest) {
 
   try {
     // ── Auth ──────────────────────────────────────────────────────
-    // Support both cookie-based auth (browser) and Bearer token (extension)
     let authedClient;
     const token = request.headers
       .get("Authorization")
@@ -29,14 +27,12 @@ export async function POST(request: NextRequest) {
       .trim();
 
     if (token) {
-      // Extension sends Bearer token
       authedClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { global: { headers: { Authorization: `Bearer ${token}` } } },
       );
     } else {
-      // Browser sends cookies — use server client
       const { createSupabaseServerClient } =
         await import("@/lib/supabase-server");
       authedClient = await createSupabaseServerClient();
@@ -55,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // ── Validate body ─────────────────────────────────────────────
     const body = await request.json();
-    const { cf_handle, jsessionid } = body;
+    const { cf_handle, jsessionid, cf_clearance } = body;
 
     if (!cf_handle?.trim()) {
       return NextResponse.json(
@@ -70,8 +66,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Encrypt and upsert ────────────────────────────────────────
-    const encryptedSession = encryptSession(jsessionid.trim());
+    // ── Encrypt both cookies as JSON ──────────────────────────────
+    // Store as JSON so we can add more cookies later without a schema change
+    const sessionPayload = JSON.stringify({
+      jsessionid: jsessionid.trim(),
+      cf_clearance: cf_clearance?.trim() || "",
+    });
+    const encryptedSession = encryptSession(sessionPayload);
 
     const { error: upsertError } = await (authedClient as any)
       .from("user_cf_auth")
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(
-      `[CF Store Session] Stored for user ${user.email} in ${Date.now() - startTime}ms`,
+      `[CF Store Session] Stored for user ${user.email} (cf_clearance: ${cf_clearance ? "yes" : "no"}) in ${Date.now() - startTime}ms`,
     );
 
     return NextResponse.json(

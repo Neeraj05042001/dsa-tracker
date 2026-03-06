@@ -127,7 +127,24 @@ export async function POST(request: NextRequest) {
 
     // ── Scrape CF ─────────────────────────────────────────────────
     console.log(`[CF Sync] Starting sync for ${cfAuth.cf_handle}`);
-    const scrapeResult = await scrapeUserGroups(cfAuth.cf_handle, jsessionid);
+
+    // Parse JSON session payload (contains jsessionid + cf_clearance)
+    let jsessionidFinal = jsessionid;
+    let cfClearance = "";
+    try {
+      const sessionData = JSON.parse(jsessionid);
+      jsessionidFinal = sessionData.jsessionid;
+      cfClearance = sessionData.cf_clearance || "";
+    } catch {
+      // Legacy: plain jsessionid string (no cf_clearance)
+      jsessionidFinal = jsessionid;
+    }
+
+    const scrapeResult = await scrapeUserGroups(
+      cfAuth.cf_handle,
+      jsessionidFinal,
+      cfClearance,
+    );
 
     // ── Handle session expired during scrape ──────────────────────
     if (scrapeResult.error === "SESSION_EXPIRED") {
