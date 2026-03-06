@@ -51,7 +51,7 @@ const rowVariants = {
   visible: (i: number) => ({
     opacity: 1,
     x: 0,
-    transition: { duration: 0.3, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.3, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], },
   }),
 };
 
@@ -194,7 +194,7 @@ export function RevisionDue({ problems }: RevisionDueProps) {
                 initial="hidden"
                 animate="visible"
                 whileHover={{ x: 2, backgroundColor: "var(--bg-elevated)" }}
-                transition2={{ duration: 0.15 }}
+                
                 style={{
                   display: "flex",
                   alignItems: "center",
