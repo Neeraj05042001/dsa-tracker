@@ -29,8 +29,7 @@ export default async function DashboardLayout({
       <Sidebar
         revisionDueCount={0}
         user={sidebarUser}
-        collapsed={false}
-        onCollapsedChange={() => {}}
+        
       />
 
       {/* Main content area */}
