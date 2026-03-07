@@ -82,13 +82,18 @@ function IconChart({ size = 18 }: { size?: number }) {
 function IconGroups({ size = 18 }: { size?: number }) {
   return (
     <svg
-      width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor"
-      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
     </svg>
   );
 }
@@ -263,14 +268,16 @@ export function Sidebar({ revisionDueCount = 0, user }: SidebarProps) {
             >
               Memoize
               {/* tagline */}
-              <span style={{
-                fontSize: 10,
-                color: "var(--text-muted)",
-                fontWeight: 400,
-                letterSpacing: "0.01em",
-                display: "block",
-                marginTop: 1,
-              }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "var(--text-muted)",
+                  fontWeight: 400,
+                  letterSpacing: "0.01em",
+                  display: "block",
+                  marginTop: 1,
+                }}
+              >
                 Solve once. Master forever.
               </span>
             </span>
@@ -541,5 +548,3 @@ export function Sidebar({ revisionDueCount = 0, user }: SidebarProps) {
     </aside>
   );
 }
-
-

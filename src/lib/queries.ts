@@ -503,3 +503,22 @@ export async function getUpcomingRevisions(days = 14): Promise<Problem[]> {
     throw new Error(`Failed to fetch upcoming revisions: ${error.message}`);
   return data ?? [];
 }
+
+
+// ============================================================
+// ANALYTICS QUERIES
+// ============================================================
+
+/**
+ * Fetch all problems for the current user (used by Analytics page).
+ */
+export async function getAllProblems(): Promise<Problem[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("problems")
+    .select("*")
+    .order("solved_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to fetch problems: ${error.message}`);
+  return (data ?? []) as Problem[];
+}

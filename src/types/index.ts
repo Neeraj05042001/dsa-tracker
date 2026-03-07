@@ -384,6 +384,7 @@ export interface CfGroupProblem {
   cf_status: CfProblemStatus;
   solved_at: string | null;
   tracker_problem_id: string | null;
+  contest_name: string | null 
 }
 
 export interface UserCfAuth {
