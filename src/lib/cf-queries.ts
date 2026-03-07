@@ -99,6 +99,7 @@ export async function persistScrapedGroups(
         group_id: groupId,
         user_id: userId,
         contest_id: contest.id,
+        contest_name: contest.name,
         problem_index: problem.index,
         problem_name: problem.name,
         problem_url: problem.url,
