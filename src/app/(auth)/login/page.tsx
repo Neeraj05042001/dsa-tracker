@@ -161,7 +161,8 @@ function LoginPageInner() {
         // After OAuth completes, Supabase redirects here.
         // We pass redirectTo so the callback can send them
         // to the right page after login.
-        redirectTo: `${window.location.origin}/auth/callback?redirectTo=${redirectTo}`,
+        // redirectTo: `${window.location.origin}/auth/callback?redirectTo=${redirectTo}`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/auth/callback?redirectTo=${redirectTo}`,
       },
     });
 
