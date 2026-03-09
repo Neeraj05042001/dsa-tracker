@@ -1,6 +1,4 @@
 // ==================== CF GROUPS — DB QUERIES ====================
-// Follows exact same patterns as queries.ts:
-// createSupabaseServerClient → query → if (error) throw
 
 import { createSupabaseServerClient } from "@/lib/supabase";
 import type { CfGroup, CfGroupProblem, CfSyncStatus } from "@/types";
@@ -61,7 +59,7 @@ export async function persistScrapedGroups(
   groups: ScrapedGroup[],
 ): Promise<{ groupsSaved: number; problemsSaved: number }> {
   const supabase = await createSupabaseServerClient();
-  let groupsSaved = 0;
+  let groupsSaved  = 0;
   let problemsSaved = 0;
 
   for (const group of groups) {
@@ -70,10 +68,10 @@ export async function persistScrapedGroups(
       .from("cf_groups")
       .upsert(
         {
-          user_id: userId,
-          group_code: group.code,
-          group_name: group.name,
-          group_url: group.url,
+          user_id:     userId,
+          group_code:  group.code,
+          group_name:  group.name,
+          group_url:   group.url,
           sync_status: "success",
           last_synced: new Date().toISOString(),
         },
@@ -96,21 +94,20 @@ export async function persistScrapedGroups(
     // 2. Upsert all problems in this group
     const allProblems = group.contests.flatMap((contest) =>
       contest.problems.map((problem) => ({
-        group_id: groupId,
-        user_id: userId,
-        contest_id: contest.id,
-        contest_name: contest.name,
+        group_id:      groupId,
+        user_id:       userId,
+        contest_id:    contest.id,
+        contest_name:  contest.name,
         problem_index: problem.index,
-        problem_name: problem.name,
-        problem_url: problem.url,
-        cf_rating: problem.cfRating,
-        cf_status: problem.status,
-        solved_at: problem.solvedAt,
+        problem_name:  problem.name,
+        problem_url:   problem.url,
+        cf_rating:     problem.cfRating,
+        cf_status:     problem.status,
+        solved_at:     problem.solvedAt,
       })),
     );
 
     if (allProblems.length > 0) {
-      // Upsert in batches of 50 to avoid payload limits
       for (let i = 0; i < allProblems.length; i += 50) {
         const batch = allProblems.slice(i, i + 50);
         const { error: problemsError } = await (supabase as any)
@@ -128,25 +125,31 @@ export async function persistScrapedGroups(
       }
     }
 
-    // 3. Update aggregate stats on the group row
-    const total = allProblems.length;
-    const solved = allProblems.filter((p) => p.cf_status === "solved").length;
-    const attempted = allProblems.filter(
-      (p) => p.cf_status === "attempted",
-    ).length;
-    const todo = total - solved - attempted;
-    const progress = total > 0 ? Math.round((solved / total) * 100) : 0;
+    // 3. Update aggregate stats
+    const solved    = allProblems.filter(p => p.cf_status === "solved").length;
+    const attempted = allProblems.filter(p => p.cf_status === "attempted").length;
+    const total     = allProblems.length;
+    const todo      = total - solved - attempted;
+    const progress  = total > 0 ? Math.round((solved / total) * 100) : 0;
 
-    await (supabase as any)
+    const { error: updateError } = await (supabase as any)
       .from("cf_groups")
       .update({
-        total_problems: total,
-        solved_count: solved,
+        total_problems:  total,
+        solved_count:    solved,
         attempted_count: attempted,
-        todo_count: todo,
-        progress_pct: progress,
+        todo_count:      todo,
+        progress_pct:    progress,
+        last_synced:     new Date().toISOString(),
       })
       .eq("id", groupId);
+
+    if (updateError) {
+      console.error(
+        `[CF Queries] Aggregate update failed for ${group.code}:`,
+        updateError.message,
+      );
+    }
   }
 
   return { groupsSaved, problemsSaved };
@@ -175,10 +178,7 @@ export async function invalidateCfSession(userId: string) {
   const supabase = await createSupabaseServerClient();
   await (supabase as any)
     .from("user_cf_auth")
-    .update({
-      is_session_valid: false,
-      consecutive_failures: 3,
-    })
+    .update({ is_session_valid: false, consecutive_failures: 3 })
     .eq("user_id", userId);
 }
 
@@ -189,10 +189,10 @@ export async function incrementSyncFailure(userId: string) {
   const supabase = await createSupabaseServerClient();
 
   const { data } = await (supabase as any)
-  .from('user_cf_auth')
-  .select('consecutive_failures')
-  .eq('user_id', userId)
-  .single()
+    .from("user_cf_auth")
+    .select("consecutive_failures")
+    .eq("user_id", userId)
+    .single();
 
   const failures = (data?.consecutive_failures ?? 0) + 1;
 
@@ -200,8 +200,8 @@ export async function incrementSyncFailure(userId: string) {
     .from("user_cf_auth")
     .update({
       consecutive_failures: failures,
-      is_session_valid: failures < 3,
-      last_sync_attempt: new Date().toISOString(),
+      is_session_valid:     failures < 3,
+      last_sync_attempt:    new Date().toISOString(),
     })
     .eq("user_id", userId);
 }
@@ -215,8 +215,8 @@ export async function resetSyncFailures(userId: string) {
     .from("user_cf_auth")
     .update({
       consecutive_failures: 0,
-      is_session_valid: true,
-      last_sync_attempt: new Date().toISOString(),
+      is_session_valid:     true,
+      last_sync_attempt:    new Date().toISOString(),
     })
     .eq("user_id", userId);
 }
@@ -225,13 +225,13 @@ export async function resetSyncFailures(userId: string) {
  * Log a sync attempt to cf_sync_log.
  */
 export async function logSyncAttempt(entry: {
-  user_id: string;
-  triggered_by: "manual" | "cron" | "extension";
-  status: "success" | "failed" | "rate_limited" | "partial";
-  groups_synced: number;
+  user_id:         string;
+  triggered_by:    "manual" | "cron" | "extension";
+  status:          "success" | "failed" | "rate_limited" | "partial";
+  groups_synced:   number;
   problems_synced: number;
-  error_message?: string;
-  duration_ms: number;
+  error_message?:  string;
+  duration_ms:     number;
 }) {
   const supabase = await createSupabaseServerClient();
   await (supabase as any).from("cf_sync_log").insert(entry);
@@ -243,12 +243,12 @@ export async function logSyncAttempt(entry: {
  */
 export async function getUsersDueForSync(): Promise<
   Array<{
-    user_id: string;
-    cf_handle: string;
+    user_id:           string;
+    cf_handle:         string;
     encrypted_session: string;
   }>
 > {
-  const supabase = await createSupabaseServerClient();
+  const supabase    = await createSupabaseServerClient();
   const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
