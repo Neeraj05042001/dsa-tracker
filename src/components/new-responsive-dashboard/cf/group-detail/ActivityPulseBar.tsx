@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -415,417 +416,424 @@ export function ActivityPulseBar({
       : 0;
 
   return (
-    <motion.div
-      initial={shouldReduce ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        background: "var(--bg-surface, #111113)",
-        border: "1px solid var(--border-subtle, rgba(255,255,255,0.07))",
-        borderRadius: 14,
-        padding: "16px 18px 14px",
-        position: "relative",
-        // overflow: "hidden",
-      }}
-    >
-      {/* Ambient glow — top right */}
+    <>
+      
       <motion.div
-        animate={{ opacity: hoveredIdx !== null ? 0.1 : 0.05 }}
-        transition={{ duration: 0.4 }}
+        initial={shouldReduce ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         style={{
-          position: "absolute",
-          top: -32,
-          right: -32,
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
-          background: "#00d4aa",
-          filter: "blur(40px)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Bottom progress strip — accent line */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: "linear-gradient(90deg, #00d4aa, transparent)",
-          transformOrigin: "left",
-          opacity: 0.4,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* ── Header row ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
+          background: "var(--bg-surface, #111113)",
+          border: "1px solid var(--border-subtle, rgba(255,255,255,0.07))",
+          borderRadius: 14,
+          padding: "16px 18px 14px",
+          position: "relative",
+          // overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: "var(--text-muted)",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              fontFamily: "var(--font-sans, sans-serif)",
-            }}
-          >
-            Activity
-          </span>
-          <span
-            style={{
-              fontSize: 10,
-              color: "var(--text-muted)",
-              opacity: 0.5,
-              fontFamily: "var(--font-mono, monospace)",
-            }}
-          >
-            · last {days}d
-          </span>
-        </div>
+        {/* Ambient glow — top right */}
+        <motion.div
+          animate={{ opacity: hoveredIdx !== null ? 0.1 : 0.05 }}
+          transition={{ duration: 0.4 }}
+          style={{
+            position: "absolute",
+            top: -32,
+            right: -32,
+            width: 160,
+            height: 160,
+            borderRadius: "50%",
+            background: "#00d4aa",
+            filter: "blur(40px)",
+            pointerEvents: "none",
+          }}
+        />
 
-        {/* Difficulty legend */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {[
-            { label: "Easy", color: "#22c55e" },
-            { label: "Med", color: "#f59e0b" },
-            { label: "Hard", color: "#f87171" },
-            { label: "Mix", color: "#00d4aa" },
-          ].map(({ label, color }) => (
-            <div
-              key={label}
-              style={{ display: "flex", alignItems: "center", gap: 4 }}
-            >
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 2,
-                  background: color,
-                  opacity: 0.8,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 9.5,
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono, monospace)",
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+        {/* Bottom progress strip — accent line */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: "linear-gradient(90deg, #00d4aa, transparent)",
+            transformOrigin: "left",
+            opacity: 0.4,
+            pointerEvents: "none",
+          }}
+        />
 
-      {/* ── Pulse bar container ── */}
-      <div ref={containerRef} style={{ position: "relative" }}>
-        {/* Month labels row */}
+        {/* ── Header row ── */}
         <div
           style={{
             display: "flex",
-            marginBottom: 4,
-            height: 14,
-            position: "relative",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
           }}
         >
-          {containerWidth > 0 &&
-            monthLabels.map(({ label, idx }) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "var(--text-muted)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                fontFamily: "var(--font-sans, sans-serif)",
+              }}
+            >
+              Activity
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--text-muted)",
+                opacity: 0.5,
+                fontFamily: "var(--font-mono, monospace)",
+              }}
+            >
+              · last {days}d
+            </span>
+          </div>
+
+          {/* Difficulty legend */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {[
+              { label: "Easy", color: "#22c55e" },
+              { label: "Med", color: "#f59e0b" },
+              { label: "Hard", color: "#f87171" },
+              { label: "Mix", color: "#00d4aa" },
+            ].map(({ label, color }) => (
               <div
-                key={`${label}-${idx}`}
-                style={{
-                  position: "absolute",
-                  left: idx * (barWidth + BAR_GAP),
-                  fontSize: 9,
-                  color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                  opacity: 0.6,
-                  whiteSpace: "nowrap",
-                }}
+                key={label}
+                style={{ display: "flex", alignItems: "center", gap: 4 }}
               >
-                {label}
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 2,
+                    background: color,
+                    opacity: 0.8,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-mono, monospace)",
+                  }}
+                >
+                  {label}
+                </span>
               </div>
             ))}
+          </div>
         </div>
 
-        {/* Bars */}
+        {/* ── Pulse bar container ── */}
+        <div ref={containerRef} style={{ position: "relative" }}>
+          {/* Month labels row */}
+          <div
+            style={{
+              display: "flex",
+              marginBottom: 4,
+              height: 14,
+              position: "relative",
+            }}
+          >
+            {containerWidth > 0 &&
+              monthLabels.map(({ label, idx }) => (
+                <div
+                  key={`${label}-${idx}`}
+                  style={{
+                    position: "absolute",
+                    left: idx * (barWidth + BAR_GAP),
+                    fontSize: 9,
+                    color: "var(--text-muted)",
+                    fontFamily: "var(--font-mono, monospace)",
+                    fontWeight: 500,
+                    letterSpacing: "0.04em",
+                    opacity: 0.6,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </div>
+              ))}
+          </div>
+
+          {/* Bars */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: BAR_GAP,
+              height: 52,
+              position: "relative",
+            }}
+          >
+            {sliced.map((day, i) => {
+              const isToday = day.date === today.toISOString().slice(0, 10);
+              const isBest = bestDay?.date === day.date && day.count > 0;
+              const isHovered = hoveredIdx === i;
+              const heightPct =
+                day.count === 0 ? 0.08 : Math.max(0.12, day.count / maxCount);
+              const color = difficultyColor(
+                day.easy,
+                day.medium,
+                day.hard,
+                day.count,
+              );
+              const isEmpty = day.count === 0;
+
+              return (
+                <motion.div
+                  key={day.date}
+                  initial={shouldReduce ? false : { scaleY: 0, opacity: 0 }}
+                  animate={{
+                    scaleY: 1,
+                    opacity: hoveredIdx !== null && !isHovered ? 0.35 : 1,
+                  }}
+                  transition={
+                    shouldReduce
+                      ? { duration: 0 }
+                      : {
+                          scaleY: {
+                            duration: 0.5,
+                            delay: i * 0.008,
+                            ease: [0.22, 1, 0.36, 1],
+                          },
+                          opacity: { duration: 0.2 },
+                        }
+                  }
+                  onHoverStart={(e) =>
+                    handleBarHover(day, i, e.target as HTMLElement)
+                  }
+                  onHoverEnd={handleBarLeave}
+                  style={{
+                    width: barWidth,
+                    height: `${heightPct * 100}%`,
+                    flexShrink: 0,
+                    borderRadius: isEmpty ? 2 : "3px 3px 2px 2px",
+                    background: isEmpty
+                      ? "var(--bg-elevated, rgba(255,255,255,0.05))"
+                      : isHovered
+                        ? color
+                        : `color-mix(in srgb, ${color} ${isToday ? 100 : 75}%, transparent)`,
+                    transformOrigin: "bottom",
+                    cursor: isEmpty ? "default" : "pointer",
+                    position: "relative",
+                    boxShadow:
+                      isHovered && !isEmpty
+                        ? `0 0 10px color-mix(in srgb, ${color} 50%, transparent), 0 0 4px ${color}`
+                        : isBest
+                          ? `0 0 6px color-mix(in srgb, ${color} 35%, transparent)`
+                          : "none",
+                    transition: "background 0.15s, box-shadow 0.15s",
+                  }}
+                >
+                  {/* Today indicator — glowing dot on top */}
+                  {isToday && day.count > 0 && (
+                    <motion.div
+                      animate={{ opacity: [1, 0.4, 1] }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: -5,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 4,
+                        height: 4,
+                        borderRadius: "50%",
+                        background: color,
+                        boxShadow: `0 0 6px ${color}`,
+                      }}
+                    />
+                  )}
+
+                  {/* Best day crown indicator */}
+                  {isBest && !isToday && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -8,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        fontSize: 7,
+                        lineHeight: 1,
+                        opacity: 0.7,
+                      }}
+                    >
+                      ▲
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+
+            {/* Tooltip */}
+            <AnimatePresence>
+              {tooltip && (
+                <PulseTooltip
+                  key={tooltip.day.date}
+                  data={{ ...tooltip, containerWidth }}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* "Now" label at the right end */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: 4,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 9,
+                color: "var(--text-muted)",
+                opacity: 0.5,
+                fontFamily: "var(--font-mono, monospace)",
+              }}
+            >
+              now
+            </span>
+          </div>
+        </div>
+
+        {/* ── Footer stats row ── */}
         <div
           style={{
             display: "flex",
-            alignItems: "flex-end",
-            gap: BAR_GAP,
-            height: 52,
-            position: "relative",
+            alignItems: "center",
+            gap: 18,
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: "1px solid var(--border-subtle, rgba(255,255,255,0.07))",
+            flexWrap: "wrap",
           }}
         >
-          {sliced.map((day, i) => {
-            const isToday = day.date === today.toISOString().slice(0, 10);
-            const isBest = bestDay?.date === day.date && day.count > 0;
-            const isHovered = hoveredIdx === i;
-            const heightPct =
-              day.count === 0 ? 0.08 : Math.max(0.12, day.count / maxCount);
-            const color = difficultyColor(
-              day.easy,
-              day.medium,
-              day.hard,
-              day.count,
-            );
-            const isEmpty = day.count === 0;
-
-            return (
-              <motion.div
-                key={day.date}
-                initial={shouldReduce ? false : { scaleY: 0, opacity: 0 }}
-                animate={{
-                  scaleY: 1,
-                  opacity: hoveredIdx !== null && !isHovered ? 0.35 : 1,
-                }}
-                transition={
-                  shouldReduce
-                    ? { duration: 0 }
-                    : {
-                        scaleY: {
-                          duration: 0.5,
-                          delay: i * 0.008,
-                          ease: [0.22, 1, 0.36, 1],
-                        },
-                        opacity: { duration: 0.2 },
-                      }
-                }
-                onHoverStart={(e) =>
-                  handleBarHover(day, i, e.target as HTMLElement)
-                }
-                onHoverEnd={handleBarLeave}
-                style={{
-                  width: barWidth,
-                  height: `${heightPct * 100}%`,
-                  flexShrink: 0,
-                  borderRadius: isEmpty ? 2 : "3px 3px 2px 2px",
-                  background: isEmpty
-                    ? "var(--bg-elevated, rgba(255,255,255,0.05))"
-                    : isHovered
-                      ? color
-                      : `color-mix(in srgb, ${color} ${isToday ? 100 : 75}%, transparent)`,
-                  transformOrigin: "bottom",
-                  cursor: isEmpty ? "default" : "pointer",
-                  position: "relative",
-                  boxShadow:
-                    isHovered && !isEmpty
-                      ? `0 0 10px color-mix(in srgb, ${color} 50%, transparent), 0 0 4px ${color}`
-                      : isBest
-                        ? `0 0 6px color-mix(in srgb, ${color} 35%, transparent)`
-                        : "none",
-                  transition: "background 0.15s, box-shadow 0.15s",
-                }}
+          <StatChip
+            label="submissions"
+            value={totalSubs}
+            color="#00d4aa"
+            icon={
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
               >
-                {/* Today indicator — glowing dot on top */}
-                {isToday && day.count > 0 && (
-                  <motion.div
-                    animate={{ opacity: [1, 0.4, 1] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: -5,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      width: 4,
-                      height: 4,
-                      borderRadius: "50%",
-                      background: color,
-                      boxShadow: `0 0 6px ${color}`,
-                    }}
-                  />
-                )}
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            }
+          />
+          <StatChip
+            label="active days"
+            value={activeDays}
+            color="#3b82f6"
+            icon={
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            }
+          />
 
-                {/* Best day crown indicator */}
-                {isBest && !isToday && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: -8,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      fontSize: 7,
-                      lineHeight: 1,
-                      opacity: 0.7,
-                    }}
-                  >
-                    ▲
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
+          {currentStreak > 0 && (
+            <StatChip
+              label={`day streak`}
+              value={currentStreak}
+              color="#f97316"
+              icon={
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                >
+                  <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" />
+                </svg>
+              }
+            />
+          )}
 
-          {/* Tooltip */}
-          <AnimatePresence>
-            {tooltip && (
-              <PulseTooltip
-                key={tooltip.day.date}
-                data={{ ...tooltip, containerWidth }}
-              />
-            )}
-          </AnimatePresence>
+          {longestStreak > 1 && longestStreak !== currentStreak && (
+            <StatChip
+              label="best streak"
+              value={longestStreak}
+              color="var(--text-muted)"
+              icon={
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              }
+            />
+          )}
+
+          {bestDay && bestDay.count > 0 && (
+            <StatChip
+              label={`best — ${formatShortDate(bestDay.date)}`}
+              value={bestDay.count}
+              color={difficultyColor(
+                bestDay.easy,
+                bestDay.medium,
+                bestDay.hard,
+                bestDay.count,
+              )}
+              icon={
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              }
+            />
+          )}
         </div>
-
-        {/* "Now" label at the right end */}
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}
-        >
-          <span
-            style={{
-              fontSize: 9,
-              color: "var(--text-muted)",
-              opacity: 0.5,
-              fontFamily: "var(--font-mono, monospace)",
-            }}
-          >
-            now
-          </span>
-        </div>
-      </div>
-
-      {/* ── Footer stats row ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          marginTop: 10,
-          paddingTop: 10,
-          borderTop: "1px solid var(--border-subtle, rgba(255,255,255,0.07))",
-          flexWrap: "wrap",
-        }}
-      >
-        <StatChip
-          label="submissions"
-          value={totalSubs}
-          color="#00d4aa"
-          icon={
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          }
-        />
-        <StatChip
-          label="active days"
-          value={activeDays}
-          color="#3b82f6"
-          icon={
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          }
-        />
-
-        {currentStreak > 0 && (
-          <StatChip
-            label={`day streak`}
-            value={currentStreak}
-            color="#f97316"
-            icon={
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              >
-                <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z" />
-              </svg>
-            }
-          />
-        )}
-
-        {longestStreak > 1 && longestStreak !== currentStreak && (
-          <StatChip
-            label="best streak"
-            value={longestStreak}
-            color="var(--text-muted)"
-            icon={
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              >
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            }
-          />
-        )}
-
-        {bestDay && bestDay.count > 0 && (
-          <StatChip
-            label={`best — ${formatShortDate(bestDay.date)}`}
-            value={bestDay.count}
-            color={difficultyColor(
-              bestDay.easy,
-              bestDay.medium,
-              bestDay.hard,
-              bestDay.count,
-            )}
-            icon={
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              >
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-            }
-          />
-        )}
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
