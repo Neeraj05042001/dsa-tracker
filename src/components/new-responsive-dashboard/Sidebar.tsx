@@ -221,15 +221,25 @@ export function Sidebar({
   }, [popoverOpen]);
 
   // Close popover + drawer on route change — skip on first mount
+  // useEffect(() => {
+  //   if (!mountedRef.current) {
+  //     mountedRef.current = true;
+  //     return;
+  //   }
+  //   setPopoverOpen(false);
+  //   if (isMobileDrawer && onMobileClose) onMobileClose();
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [pathname]);
+
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-    setPopoverOpen(false);
-    if (isMobileDrawer && onMobileClose) onMobileClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  if (!mountedRef.current) {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; }; // ← reset on cleanup
+  }
+  setPopoverOpen(false);
+  if (isMobileDrawer && onMobileClose) onMobileClose();
+  return () => { mountedRef.current = false; }; // ← also reset on real unmount
+}, [pathname]);
 
   return (
     <>

@@ -36,17 +36,17 @@ function indexOrder(idx: string): number {
 }
 
 function stripeConfig(status: string): { color: string; idleOpacity: number } {
-  if (status === "solved") return { color: "#22c55e", idleOpacity: 0.45 };
-  if (status === "attempted") return { color: "#f59e0b", idleOpacity: 0.4 };
-  return { color: "rgba(255,255,255,0.1)", idleOpacity: 0.8 };
+  if (status === "solved")    return { color: "#00d4aa",                idleOpacity: 0.5  };
+  if (status === "attempted") return { color: "#f59e0b",                idleOpacity: 0.45 };
+  return                             { color: "rgba(255,255,255,0.07)", idleOpacity: 1    };
 }
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  const d = new Date(iso);
+  const d   = new Date(iso);
   const mon = d.toLocaleDateString("en-US", { month: "short" });
   const day = d.getDate();
-  const yr = String(d.getFullYear()).slice(2); // '26
+  const yr  = String(d.getFullYear()).slice(2);
   return `${mon} ${day} '${yr}`;
 }
 
@@ -61,16 +61,18 @@ function IndexBadge({ index, hovered }: { index: string; hovered: boolean }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         fontSize: 11,
         fontFamily: "var(--font-mono, monospace)",
         fontWeight: 800,
-        color: hovered ? "#00d4aa" : "rgba(0,212,170,0.45)",
-        background: hovered ? "rgba(0,212,170,0.08)" : "transparent",
-        borderRadius: 6,
+        color: hovered ? "#00d4aa" : "rgba(0,212,170,0.55)",
+        background: hovered ? "rgba(0,212,170,0.12)" : "rgba(0,212,170,0.04)",
+        border: `1px solid ${hovered ? "rgba(0,212,170,0.35)" : "rgba(0,212,170,0.1)"}`,
+        borderRadius: 7,
         transition: "all 0.14s",
         flexShrink: 0,
+        letterSpacing: "-0.02em",
       }}
     >
       {index}
@@ -83,36 +85,131 @@ function IndexBadge({ index, hovered }: { index: string; hovered: boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CompactStatus({ status }: { status: string }) {
-  const cfg: Record<string, { label: string; color: string }> = {
-    solved: { label: "Solved", color: "#22c55e" },
-    attempted: { label: "Tried", color: "#f59e0b" },
-    todo: { label: "Todo", color: "rgba(255,255,255,0.22)" },
+  const cfg: Record<string, { label: string; color: string; bg: string; border: string }> = {
+    solved: {
+      label:  "Solved",
+      color:  "#00d4aa",
+      bg:     "rgba(0,212,170,0.09)",
+      border: "rgba(0,212,170,0.22)",
+    },
+    attempted: {
+      label:  "Tried",
+      color:  "#f59e0b",
+      bg:     "rgba(245,158,11,0.09)",
+      border: "rgba(245,158,11,0.22)",
+    },
+    todo: {
+      label:  "Todo",
+      color:  "rgba(255,255,255,0.3)",
+      bg:     "rgba(255,255,255,0.04)",
+      border: "rgba(255,255,255,0.09)",
+    },
   };
   const c = cfg[status] ?? cfg.todo;
+
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        fontSize: 11,
+        fontSize: 10.5,
         fontWeight: 600,
         color: c.color,
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        borderRadius: 5,
+        padding: "2px 7px",
         whiteSpace: "nowrap",
+        letterSpacing: "0.01em",
       }}
     >
       <span
         style={{
-          width: 5,
-          height: 5,
+          width: 4.5,
+          height: 4.5,
           borderRadius: "50%",
           background: c.color,
           flexShrink: 0,
-          boxShadow: status === "solved" ? `0 0 5px ${c.color}88` : "none",
+          boxShadow: status !== "todo" ? `0 0 5px ${c.color}90` : "none",
         }}
       />
       {c.label}
     </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER TABS — sliding layoutId pill
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACCENT_MAP: Record<StatusFilter, { color: string; glow: string }> = {
+  all:       { color: "#00d4aa",               glow: "rgba(0,212,170,0.25)"   },
+  solved:    { color: "#00d4aa",               glow: "rgba(0,212,170,0.25)"   },
+  attempted: { color: "#f59e0b",               glow: "rgba(245,158,11,0.25)"  },
+  todo:      { color: "rgba(255,255,255,0.65)", glow: "rgba(255,255,255,0.1)" },
+};
+
+function FilterTabs({
+  statusFilter,
+  labels,
+  onChange,
+}: {
+  statusFilter: StatusFilter;
+  labels:       Record<StatusFilter, string>;
+  onChange:     (f: StatusFilter) => void;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <div style={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "center" }}>
+      {(["all", "todo", "solved", "attempted"] as StatusFilter[]).map((f) => {
+        const active = statusFilter === f;
+        const acc    = ACCENT_MAP[f];
+
+        return (
+          <motion.button
+            key={f}
+            onClick={() => onChange(f)}
+            whileTap={{ scale: 0.94 }}
+            style={{
+              position: "relative",
+              padding: "3px 9px",
+              borderRadius: 6,
+              border: active
+                ? `1px solid ${acc.glow}`
+                : "1px solid rgba(255,255,255,0.07)",
+              background: "transparent",
+              color: active ? acc.color : "var(--text-muted, #52525b)",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "color 0.16s, border-color 0.16s",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+            }}
+          >
+            {/* Shared sliding pill — animates between buttons via layoutId */}
+            {active && !reduced && (
+              <motion.span
+                layoutId="filter-pill"
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 5,
+                  background: `${acc.color}18`,
+                  zIndex: 0,
+                }}
+              />
+            )}
+            <span style={{ position: "relative", zIndex: 1 }}>
+              {labels[f]}
+            </span>
+          </motion.button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -124,25 +221,25 @@ function ProblemRow({
   problem,
   contestName,
   rowIndex,
-  isEven,
 }: {
-  problem: CfGroupProblem;
+  problem:     CfGroupProblem;
   contestName: string;
-  rowIndex: number;
-  isEven: boolean;
+  rowIndex:    number;
+  // isEven removed — no more zebra striping
 }) {
-  const reduced = useReducedMotion();
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-8px" });
+  const reduced  = useReducedMotion();
+  const ref      = useRef<HTMLDivElement>(null);
+  const inView   = useInView(ref, { once: true, margin: "-8px" });
   const [hov, setHov] = useState(false);
-  const stripe = stripeConfig(problem.cf_status);
+  const stripe   = stripeConfig(problem.cf_status);
+  const isSolved = problem.cf_status === "solved";
 
-  const rowBase =
-    problem.cf_status === "solved"
-      ? "rgba(34,197,94,0.015)"
-      : isEven
-        ? "rgba(255,255,255,0.008)"
-        : "transparent";
+  // Clean row base — status tint only, no zebra noise
+  const rowBase = isSolved
+    ? "rgba(0,212,170,0.018)"
+    : problem.cf_status === "attempted"
+      ? "rgba(245,158,11,0.014)"
+      : "transparent";
 
   return (
     <motion.div
@@ -155,8 +252,9 @@ function ProblemRow({
         reduced
           ? { duration: 0 }
           : {
-              duration: 0.2,
-              delay: Math.min(rowIndex * 0.014, 0.2),
+              duration: 0.22,
+              // Slower stagger — 0.025s per row, cap at 0.35s
+              delay: Math.min(rowIndex * 0.025, 0.35),
               ease: [0.22, 1, 0.36, 1],
             }
       }
@@ -164,16 +262,16 @@ function ProblemRow({
       onHoverEnd={() => setHov(false)}
       style={{
         display: "grid",
-        // # | Problem | Status | Date | Link
-        gridTemplateColumns: "36px 1fr 76px 72px 22px",
+        gridTemplateColumns: "36px 1fr 84px 72px 22px",
         alignItems: "center",
         gap: 10,
-        padding: "9px 14px 9px 16px",
-        borderBottom: "1px solid rgba(255,255,255,0.032)",
+        padding: "8px 14px 8px 16px",
+        borderBottom: "1px solid rgba(255,255,255,0.028)",
         background: hov
-          ? "linear-gradient(90deg, rgba(0,212,170,0.042) 0%, rgba(0,212,170,0.01) 40%, transparent 70%)"
+          ? "linear-gradient(90deg, rgba(0,212,170,0.05) 0%, rgba(0,212,170,0.012) 45%, transparent 75%)"
           : rowBase,
         position: "relative",
+        overflow: "hidden",         // needed for shimmer clip
         transition: "background 0.14s",
       }}
     >
@@ -181,9 +279,7 @@ function ProblemRow({
       <div
         style={{
           position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
+          left: 0, top: 0, bottom: 0,
           width: 2.5,
           background: stripe.color,
           opacity: hov ? 1 : stripe.idleOpacity,
@@ -192,13 +288,35 @@ function ProblemRow({
         }}
       />
 
+      {/* One-time shimmer sweep — solved rows only, fires on mount */}
+      {isSolved && !reduced && (
+        <motion.div
+          aria-hidden
+          initial={{ x: "-110%" }}
+          animate={inView ? { x: "110%" } : { x: "-110%" }}
+          transition={{
+            duration: 0.75,
+            delay: Math.min(rowIndex * 0.025, 0.35) + 0.12,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(105deg, transparent 30%, rgba(0,212,170,0.07) 50%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
+
       {/* # */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", position: "relative", zIndex: 2 }}>
         <IndexBadge index={problem.problem_index} hovered={hov} />
       </div>
 
       {/* Name + contest chip */}
-      <div style={{ overflow: "hidden", minWidth: 0 }}>
+      <div style={{ overflow: "hidden", minWidth: 0, position: "relative", zIndex: 2 }}>
         <a
           href={problem.problem_url ?? undefined}
           target="_blank"
@@ -214,6 +332,7 @@ function ProblemRow({
             whiteSpace: "nowrap",
             transition: "color 0.12s, transform 0.14s",
             transform: hov ? "translateX(2px)" : "translateX(0)",
+            letterSpacing: "-0.01em",
           }}
         >
           {problem.problem_name}
@@ -223,9 +342,9 @@ function ProblemRow({
             display: "inline-block",
             fontSize: 9,
             fontWeight: 500,
-            color: "var(--text-muted, #52525b)",
+            color: "rgba(255,255,255,0.28)",
             background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.055)",
+            border: "1px solid rgba(255,255,255,0.07)",
             borderRadius: 4,
             padding: "1px 5px",
             marginTop: 3,
@@ -233,54 +352,61 @@ function ProblemRow({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            letterSpacing: "0.01em",
           }}
         >
           {contestName}
         </span>
       </div>
 
-      {/* Status */}
-      <CompactStatus status={problem.cf_status} />
+      {/* Status pill */}
+      <div style={{ position: "relative", zIndex: 2 }}>
+        <CompactStatus status={problem.cf_status} />
+      </div>
 
-      {/* Date — solved_at */}
+      {/* Date */}
       <span
         style={{
           fontSize: 10,
           fontFamily: "var(--font-mono, monospace)",
           color: problem.solved_at
-            ? "var(--text-muted, #52525b)"
+            ? "rgba(0,212,170,0.4)"
             : "rgba(255,255,255,0.1)",
           textAlign: "right",
           whiteSpace: "nowrap",
           letterSpacing: "0.01em",
+          position: "relative",
+          zIndex: 2,
         }}
       >
         {formatDate(problem.solved_at)}
       </span>
 
-      {/* Link */}
+      {/* External link */}
       <motion.a
         href={problem.problem_url ?? undefined}
         target="_blank"
         rel="noopener noreferrer"
-        animate={{ opacity: hov ? 1 : 0.18 }}
+        animate={{ opacity: hov ? 1 : 0.15 }}
         transition={{ duration: 0.12 }}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           color: "#00d4aa",
+          width: 22,
+          height: 22,
+          borderRadius: 5,
+          background: hov ? "rgba(0,212,170,0.1)" : "transparent",
+          transition: "background 0.14s",
+          position: "relative",
+          zIndex: 2,
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <svg
-          width="11"
-          height="11"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
+          width="11" height="11" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
         >
           <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
           <polyline points="15 3 21 3 21 9" />
@@ -292,7 +418,7 @@ function ProblemRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMPTY STATE
+// EMPTY STATE  (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EmptyState({ filter, search }: { filter: string; search: string }) {
@@ -352,8 +478,9 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
     const reduced = useReducedMotion();
 
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-    const [search, setSearch] = useState("");
-    const searchRef = useRef<HTMLInputElement>(null);
+    const [search, setSearch]             = useState("");
+    const searchRef     = useRef<HTMLInputElement>(null);
+    const searchWrapRef = useRef<HTMLDivElement>(null);
 
     // Reset when contest selection changes
     useEffect(() => {
@@ -392,9 +519,9 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
         ? problems.filter((p) => p.contest_id === selectedContest)
         : problems;
       return {
-        all: base.length,
-        todo: base.filter((p) => p.cf_status === "todo").length,
-        solved: base.filter((p) => p.cf_status === "solved").length,
+        all:       base.length,
+        todo:      base.filter((p) => p.cf_status === "todo").length,
+        solved:    base.filter((p) => p.cf_status === "solved").length,
         attempted: base.filter((p) => p.cf_status === "attempted").length,
       };
     }, [problems, selectedContest]);
@@ -404,11 +531,27 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
       : "All Problems";
 
     const labels: Record<StatusFilter, string> = {
-      all: `All (${counts.all})`,
-      todo: `Todo (${counts.todo})`,
-      solved: `Solved (${counts.solved})`,
+      all:       `All (${counts.all})`,
+      todo:      `Todo (${counts.todo})`,
+      solved:    `Solved (${counts.solved})`,
       attempted: `Tried (${counts.attempted})`,
     };
+
+    // Search clear — clears state + pulses the input wrapper
+    function handleClearSearch() {
+      setSearch("");
+      searchRef.current?.focus();
+      if (!reduced && searchWrapRef.current) {
+        searchWrapRef.current.animate(
+          [
+            { transform: "scale(1)"    },
+            { transform: "scale(1.04)" },
+            { transform: "scale(1)"    },
+          ],
+          { duration: 180, easing: "ease-out" },
+        );
+      }
+    }
 
     // ── RENDER ──────────────────────────────────────────────────────────────
 
@@ -424,14 +567,14 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
         }
         style={{
           background: "var(--bg-surface, #111113)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.07)",
           borderRadius: 14,
           overflow: "hidden",
           position: "relative",
           display: "flex",
           flexDirection: "column",
-          // ← Fixed height — scroll lives inside, container never grows
           height: 520,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
         }}
       >
         {/* Bottom accent */}
@@ -445,13 +588,12 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
           }
           style={{
             position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
+            bottom: 0, left: 0, right: 0,
             height: 2,
-            background: "linear-gradient(90deg, #00d4aa, transparent)",
+            background:
+              "linear-gradient(90deg, #00d4aa 0%, rgba(0,212,170,0.4) 40%, transparent 80%)",
             transformOrigin: "left",
-            opacity: 0.22,
+            opacity: 0.35,
             pointerEvents: "none",
             zIndex: 2,
           }}
@@ -463,18 +605,19 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "11px 14px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            padding: "10px 14px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
             flexWrap: "wrap",
             gap: 8,
             flexShrink: 0,
+            background: "rgba(0,0,0,0.12)",
           }}
         >
-          {/* Left — dynamic title + filter tabs */}
+          {/* Left — title + sliding-pill filter tabs */}
           <div
             style={{
               display: "flex",
-              gap: 5,
+              gap: 4,
               flexWrap: "wrap",
               alignItems: "center",
             }}
@@ -487,14 +630,14 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                 exit={{ opacity: 0, y: 3 }}
                 transition={{ duration: 0.13 }}
                 style={{
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: 700,
                   color: selectedContest
                     ? "#00d4aa"
                     : "var(--text-muted, #52525b)",
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  marginRight: 4,
+                  marginRight: 6,
                   whiteSpace: "nowrap",
                   fontFamily: "var(--font-mono, monospace)",
                 }}
@@ -503,36 +646,11 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
               </motion.span>
             </AnimatePresence>
 
-            {(["all", "todo", "solved", "attempted"] as StatusFilter[]).map(
-              (f) => {
-                const active = statusFilter === f;
-                return (
-                  <motion.button
-                    key={f}
-                    onClick={() => setStatusFilter(f)}
-                    whileTap={{ scale: 0.94 }}
-                    style={{
-                      padding: "3px 9px",
-                      borderRadius: 6,
-                      border: active
-                        ? "1px solid rgba(0,212,170,0.35)"
-                        : "1px solid rgba(255,255,255,0.06)",
-                      background: active
-                        ? "rgba(0,212,170,0.1)"
-                        : "transparent",
-                      color: active ? "#00d4aa" : "var(--text-muted, #52525b)",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.14s",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {labels[f]}
-                  </motion.button>
-                );
-              },
-            )}
+            <FilterTabs
+              statusFilter={statusFilter}
+              labels={labels}
+              onChange={setStatusFilter}
+            />
           </div>
 
           {/* Right — contest chip + search */}
@@ -549,9 +667,9 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                     display: "flex",
                     alignItems: "center",
                     gap: 5,
-                    padding: "2px 7px",
+                    padding: "2px 8px",
                     background: "rgba(0,212,170,0.08)",
-                    border: "1px solid rgba(0,212,170,0.2)",
+                    border: "1px solid rgba(0,212,170,0.22)",
                     borderRadius: 6,
                   }}
                 >
@@ -583,37 +701,28 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                     }}
                   >
                     <svg
-                      width="9"
-                      height="9"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
+                      width="9" height="9" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2.5"
                     >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
+                      <line x1="18" y1="6"  x2="6"  y2="18" />
+                      <line x1="6"  y1="6"  x2="18" y2="18" />
                     </svg>
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Search with expand-on-focus + clear */}
-            <div style={{ position: "relative" }}>
+            {/* Search input — wrapper ref for clear pulse */}
+            <div ref={searchWrapRef} style={{ position: "relative" }}>
               <svg
                 style={{
                   position: "absolute",
-                  left: 7,
-                  top: "50%",
+                  left: 7, top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
                 }}
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--text-muted, #52525b)"
-                strokeWidth="2"
+                width="10" height="10" viewBox="0 0 24 24"
+                fill="none" stroke="var(--text-muted, #52525b)" strokeWidth="2"
               >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -639,7 +748,7 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                   transition: "border-color 0.14s, width 0.2s",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "rgba(0,212,170,0.3)";
+                  e.target.style.borderColor = "rgba(0,212,170,0.35)";
                   e.target.style.width = "155px";
                 }}
                 onBlur={(e) => {
@@ -654,14 +763,10 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
                     transition={{ duration: 0.1 }}
-                    onClick={() => {
-                      setSearch("");
-                      searchRef.current?.focus();
-                    }}
+                    onClick={handleClearSearch}
                     style={{
                       position: "absolute",
-                      right: 5,
-                      top: "50%",
+                      right: 5, top: "50%",
                       transform: "translateY(-50%)",
                       background: "none",
                       border: "none",
@@ -673,15 +778,11 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                     }}
                   >
                     <svg
-                      width="9"
-                      height="9"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
+                      width="9" height="9" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" strokeWidth="2.5"
                     >
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
+                      <line x1="18" y1="6"  x2="6"  y2="18" />
+                      <line x1="6"  y1="6"  x2="18" y2="18" />
                     </svg>
                   </motion.button>
                 )}
@@ -690,15 +791,15 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
           </div>
         </div>
 
-        {/* ── COLUMN HEADERS — sticky ──────────────────────────────────────── */}
+        {/* ── COLUMN HEADERS ──────────────────────────────────────────────── */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "36px 1fr 76px 72px 22px",
+            gridTemplateColumns: "36px 1fr 84px 72px 22px",
             gap: 10,
             padding: "6px 14px 6px 16px",
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-            background: "rgba(0,0,0,0.18)",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            background: "rgba(0,0,0,0.22)",
             position: "sticky",
             top: 0,
             zIndex: 10,
@@ -706,11 +807,11 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
           }}
         >
           {[
-            { label: "#", align: "center" },
-            { label: "Problem", align: "left" },
-            { label: "Status", align: "left" },
-            { label: "Date", align: "right" },
-            { label: "", align: "left" },
+            { label: "#",       align: "center" },
+            { label: "Problem", align: "left"   },
+            { label: "Status",  align: "left"   },
+            { label: "Date",    align: "right"  },
+            { label: "",        align: "left"   },
           ].map((col, i) => (
             <span
               key={i}
@@ -718,7 +819,7 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                 display: "block",
                 fontSize: 9,
                 fontWeight: 700,
-                color: "var(--text-muted, #52525b)",
+                color: "rgba(255,255,255,0.25)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 textAlign: col.align as React.CSSProperties["textAlign"],
@@ -729,7 +830,7 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
           ))}
         </div>
 
-        {/* ── ROWS — scrollable, fixed height via parent ───────────────────── */}
+        {/* ── ROWS ────────────────────────────────────────────────────────── */}
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <AnimatePresence mode="popLayout">
             {filteredProblems.length === 0 ? (
@@ -741,7 +842,6 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
                   problem={p}
                   contestName={contestNameMap.get(p.contest_id) ?? p.contest_id}
                   rowIndex={i}
-                  isEven={i % 2 === 0}
                 />
               ))
             )}
@@ -752,37 +852,35 @@ export const ProblemsTable = forwardRef<HTMLDivElement, ProblemsTableProps>(
         <div
           style={{
             padding: "7px 14px",
-            borderTop: "1px solid rgba(255,255,255,0.04)",
+            borderTop: "1px solid rgba(255,255,255,0.05)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             flexShrink: 0,
-            background: "rgba(0,0,0,0.1)",
+            background: "rgba(0,0,0,0.15)",
           }}
         >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontFamily: "var(--font-mono, monospace)", color: "var(--text-muted, #52525b)" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#00d4aa", opacity: 0.7, display: "inline-block" }} />
+              {counts.solved} solved
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontFamily: "var(--font-mono, monospace)", color: "var(--text-muted, #52525b)" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#f59e0b", opacity: 0.7, display: "inline-block" }} />
+              {counts.attempted} tried
+            </span>
+          </div>
+
           <span
             style={{
               fontSize: 10,
-              color: "var(--text-muted, #52525b)",
+              color: "rgba(255,255,255,0.14)",
               fontFamily: "var(--font-mono, monospace)",
             }}
           >
-            {filteredProblems.length} problem
-            {filteredProblems.length !== 1 ? "s" : ""}
-            {selectedContest && (
-              <span style={{ color: "rgba(255,255,255,0.2)", marginLeft: 4 }}>
-                · filtered
-              </span>
-            )}
-          </span>
-          <span
-            style={{
-              fontSize: 10,
-              color: "rgba(255,255,255,0.12)",
-              fontFamily: "var(--font-mono, monospace)",
-            }}
-          >
-            {statusFilter !== "all" ? `${statusFilter} only` : ""}
+            {filteredProblems.length} problem{filteredProblems.length !== 1 ? "s" : ""}
+            {statusFilter !== "all" ? ` · ${statusFilter} only` : ""}
+            {selectedContest ? " · filtered" : ""}
           </span>
         </div>
       </motion.div>
