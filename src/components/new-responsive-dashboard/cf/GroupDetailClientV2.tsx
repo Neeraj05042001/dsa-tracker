@@ -22,7 +22,10 @@ import { ProblemsTable } from "./group-detail/ProblemsTable";
 
 // import type { ContestSummary } from "./group-detail/ContestsSection";
 import { ContestSummary } from "./group-detail/ContestSection";
-import type { DiffPoint } from "./group-detail/PerformanceSection";
+import {
+  PerformanceSection,
+  type DiffPoint,
+} from "./group-detail/PerformanceSection";
 
 import { AnalyticsSection } from "./group-detail/AnalyticsSection";
 import { RecommendedProblems2 } from "./group-detail/RecommendProblems2";
@@ -30,45 +33,177 @@ import { RecommendedProblems2 } from "./group-detail/RecommendProblems2";
 // SECTION SEPARATOR  (full-width, centered label — replaces old Separator)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SectionSeparator({ children }: { children: React.ReactNode }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// SCROLL-IN SECTION WRAPPER
+// Each major section fades + slides up as it enters the viewport
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ScrollSection({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-48px 0px" });
   return (
-    <div
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.52, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION SEPARATOR — premium version
+// Left-aligned label with teal dot, asymmetric gradient lines
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SectionSeparator({
+  children,
+  icon,
+}: {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-20px" });
+
+  return (
+    // <motion.div
+    //   ref={ref}
+    //   initial={{ opacity: 0 }}
+    //   animate={inView ? { opacity: 1 } : {}}
+    //   transition={{ duration: 0.4, ease: "easeOut" }}
+    //   style={{
+    //     display: "flex",
+    //     alignItems: "center",
+    //     gap: 12,
+    //     padding: "4px 0",
+    //     userSelect: "none",
+    //   }}
+    // >
+    //   {/* Teal dot */}
+    //   <div
+    //     style={{
+    //       width: 5,
+    //       height: 5,
+    //       borderRadius: "50%",
+    //       background: "#00d4aa",
+    //       boxShadow: "0 0 8px rgba(0,212,170,0.6)",
+    //       flexShrink: 0,
+    //     }}
+    //   />
+
+    //   {/* Label */}
+    //   <div
+    //     style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
+    //   >
+    //     {icon && (
+    //       <span
+    //         style={{
+    //           color: "rgba(0,212,170,0.5)",
+    //           display: "flex",
+    //           alignItems: "center",
+    //         }}
+    //       >
+    //         {icon}
+    //       </span>
+    //     )}
+    //     <span
+    //       style={{
+    //         fontSize: 9,
+    //         fontWeight: 800,
+    //         letterSpacing: "0.18em",
+    //         textTransform: "uppercase",
+    //         color: "rgba(255,255,255,0.28)",
+    //         fontFamily: "var(--font-mono, monospace)",
+    //         whiteSpace: "nowrap",
+    //       }}
+    //     >
+    //       {children}
+    //     </span>
+    //   </div>
+
+    //   {/* Right line — animated, gradient fading out */}
+    //   <motion.div
+    //     initial={{ scaleX: 0 }}
+    //     animate={inView ? { scaleX: 1 } : {}}
+    //     transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+    //     style={{
+    //       flex: 1,
+    //       height: 1,
+    //       background:
+    //         "linear-gradient(to right, rgba(0,212,170,0.18), rgba(255,255,255,0.04) 40%, transparent)",
+    //       transformOrigin: "left",
+    //     }}
+    //   />
+    // </motion.div>
+
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        margin: "2px 0",
+        gap: 14,
+        padding: "4px 0",
+        userSelect: "none",
       }}
     >
-      <div
+      {/* Left line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : {}}
+        transition={{ duration: 0.6, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
         style={{
           flex: 1,
           height: 1,
-          background: "rgba(255,255,255,0.05)",
+          background: "linear-gradient(to left, rgba(0,212,170,0.2), transparent)",
+          transformOrigin: "right",
         }}
       />
-      <span
-        style={{
-          fontSize: 9,
+
+      {/* Center label */}
+      <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+        {icon && (
+          <span style={{ color: "rgba(0,212,170,0.55)", display: "flex", alignItems: "center" }}>
+            {icon}
+          </span>
+        )}
+        <span style={{
+          fontSize: 11,
           fontWeight: 700,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "var(--text-muted, #52525b)",
+          color: "rgba(255,255,255,0.45)",
           fontFamily: "var(--font-mono, monospace)",
           whiteSpace: "nowrap",
-          padding: "0 4px",
-        }}
-      >
-        {children}
-      </span>
-      <div
+        }}>
+          {children}
+        </span>
+      </div>
+
+      {/* Right line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : {}}
+        transition={{ duration: 0.6, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
         style={{
           flex: 1,
           height: 1,
-          background: "rgba(255,255,255,0.05)",
+          background: "linear-gradient(to right, rgba(0,212,170,0.2), transparent)",
+          transformOrigin: "left",
         }}
       />
-    </div>
+    </motion.div>
   );
 }
 
@@ -555,24 +690,24 @@ export function GroupDetailClientV2({
   }, [problems]);
 
   // ── Difficulty points ─────────────────────────────────────────────────────
-  // const diffPoints = useMemo<DiffPoint[]>(() => {
-  //   const map = new Map<string, { total: number; solved: number }>();
-  //   for (const p of problems) {
-  //     const cur = map.get(p.problem_index) ?? { total: 0, solved: 0 };
-  //     map.set(p.problem_index, {
-  //       total: cur.total + 1,
-  //       solved: cur.solved + (p.cf_status === "solved" ? 1 : 0),
-  //     });
-  //   }
-  //   return Array.from(map.entries())
-  //     .map(([index, { total, solved }]) => ({
-  //       index,
-  //       total,
-  //       solved,
-  //       pct: total > 0 ? (solved / total) * 100 : 0,
-  //     }))
-  //     .sort((a, b) => indexOrder(a.index) - indexOrder(b.index));
-  // }, [problems]);
+  const diffPoints = useMemo<DiffPoint[]>(() => {
+    const map = new Map<string, { total: number; solved: number }>();
+    for (const p of problems) {
+      const cur = map.get(p.problem_index) ?? { total: 0, solved: 0 };
+      map.set(p.problem_index, {
+        total: cur.total + 1,
+        solved: cur.solved + (p.cf_status === "solved" ? 1 : 0),
+      });
+    }
+    return Array.from(map.entries())
+      .map(([index, { total, solved }]) => ({
+        index,
+        total,
+        solved,
+        pct: total > 0 ? (solved / total) * 100 : 0,
+      }))
+      .sort((a, b) => indexOrder(a.index) - indexOrder(b.index));
+  }, [problems]);
 
   // ── Lookup maps ───────────────────────────────────────────────────────────
   const contestNameMap = useMemo(() => {
@@ -635,68 +770,150 @@ export function GroupDetailClientV2({
   return (
     <>
       <ScrollProgressBar />
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* 1 — Hero */}
-        <HeroCard
-          group={group}
-          completedContests={completedContests}
-          totalContests={contests.length}
-          nextProblem={nextProblem}
-        />
 
-        <SectionSeparator>Activity</SectionSeparator>
-
-        {/* 2 — Activity Pulse Bar */}
-        <ActivityPulseBar
-          data={activityData}
-          days={60}
-          groupName={group.group_name}
-          totalSubmissions={peerData?.submissionTimestamps.length ?? 0}
-        />
-
-        {/* ── separator ────────────────────────────────────────────── */}
-        <SectionSeparator>Contests & Problems</SectionSeparator>
-
-        {/* 3 — Contests (left) + Problems (right) — both fixed 520px height */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <ContestsSection
-            contests={contests}
-            selectedContest={selectedContest}
-            onSelectContest={handleContestSelect}
-          />
-          <ProblemsTable
-            ref={tableRef}
-            problems={problems}
-            contestNameMap={contestNameMap}
-            selectedContest={selectedContest}
-            onClearContest={() => setSelectedContest(null)}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {/* ── 1. Hero ─────────────────────────────────────────────────── */}
+        <div style={{ paddingBottom: 32 }}>
+          <HeroCard
+            group={group}
+            completedContests={completedContests}
+            totalContests={contests.length}
+            nextProblem={nextProblem}
           />
         </div>
 
-        
+        {/* ── 2. Activity ─────────────────────────────────────────────── */}
+        <SectionSeparator
+          icon={
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          }
+        >
+          Submission Activity
+        </SectionSeparator>
 
+        <div style={{ paddingTop: 14, paddingBottom: 32 }}>
+          <ScrollSection>
+            <ActivityPulseBar
+              data={activityData}
+              days={60}
+              groupName={group.group_name}
+              totalSubmissions={peerData?.submissionTimestamps.length ?? 0}
+            />
+          </ScrollSection>
+        </div>
+
+        {/* ── 3. Contests & Problems ───────────────────────────────────── */}
+        <SectionSeparator
+          icon={
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M6 9H4.5a2.5 2.5 0 010-5H6" />
+              <path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
+              <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+            </svg>
+          }
+        >
+          Contests &amp; Problems
+        </SectionSeparator>
+
+        <div style={{ paddingTop: 14, paddingBottom: 32 }}>
+          <ScrollSection>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+                alignItems: "start",
+              }}
+            >
+              <ContestsSection
+                contests={contests}
+                selectedContest={selectedContest}
+                onSelectContest={handleContestSelect}
+              />
+              <ProblemsTable
+                ref={tableRef}
+                problems={problems}
+                contestNameMap={contestNameMap}
+                selectedContest={selectedContest}
+                onClearContest={() => setSelectedContest(null)}
+              />
+            </div>
+          </ScrollSection>
+        </div>
+
+        {/* ── 4. Analytics ────────────────────────────────────────────── */}
         {contests.length > 0 && (
           <>
-            <SectionSeparator>Analytics</SectionSeparator>
-            <AnalyticsSection contests={contests} problems={problems} />
+            <SectionSeparator
+              icon={
+                <svg
+                  width="9"
+                  height="9"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              }
+            >
+              Insights &amp; Analytics
+            </SectionSeparator>
+
+            <div style={{ paddingTop: 14, paddingBottom: 32 }}>
+              <ScrollSection>
+                <AnalyticsSection contests={contests} problems={problems} />
+              </ScrollSection>
+            </div>
           </>
         )}
 
-        {/* 4 — Performance graph */}
-      
+        {/* ── 5. Up Next ──────────────────────────────────────────────── */}
+        <SectionSeparator
+          icon={
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          }
+        >
+          What to Solve Next
+        </SectionSeparator>
 
-        
-
-        <SectionSeparator>Up Next</SectionSeparator>
-        
-        <RecommendedProblems2 problems={problems} contests={contests} />
+        <div style={{ paddingTop: 14, paddingBottom: 16 }}>
+          <ScrollSection>
+            <RecommendedProblems2 problems={problems} contests={contests} />
+          </ScrollSection>
+        </div>
       </div>
     </>
   );

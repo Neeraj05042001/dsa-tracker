@@ -1,3 +1,1381 @@
+// "use client";
+
+// import {
+//   useState,
+//   useMemo,
+//   useRef,
+//   useEffect,
+//   useCallback,
+//   useLayoutEffect,
+// } from "react";
+// import {
+//   motion,
+//   AnimatePresence,
+//   animate,
+//   useMotionValue,
+//   useTransform,
+//   useInView,
+//   useSpring,
+// } from "framer-motion";
+// import Link from "next/link";
+// import type {
+//   CfGroup,
+//   CfGroupProblem,
+//   UserCfAuth,
+//   CfSyncStatus,
+// } from "@/types";
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // TYPES
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// type GroupWithProblems = CfGroup & { problems: CfGroupProblem[] };
+
+// interface Props {
+//   groups: GroupWithProblems[];
+//   cfAuth: UserCfAuth | null;
+//   lastSynced: string | null;
+//   userId: string;
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // DESIGN TOKENS
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// const D = {
+//   surface: "var(--bg-surface,  #111114)",
+//   elevated: "var(--bg-elevated, #16161a)",
+//   border: "rgba(255,255,255,0.07)",
+//   muted: "var(--text-muted,     #52525b)",
+//   secondary: "var(--text-secondary, #a1a1aa)",
+//   primary: "var(--text-primary,   #f4f4f5)",
+//   teal: "#00d4aa",
+//   amber: "#fbbf24",
+//   red: "#f87171",
+//   green: "#4ade80",
+//   mono: "var(--font-mono, 'JetBrains Mono', monospace)",
+//   sans: "var(--font-sans, system-ui, sans-serif)",
+// } as const;
+
+// const EASE = [0.22, 1, 0.36, 1] as const;
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // HELPERS
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function formatTimeAgo(iso: string | null): string {
+//   if (!iso) return "Never";
+//   const diff = Date.now() - new Date(iso).getTime();
+//   const m = Math.floor(diff / 60_000);
+//   const h = Math.floor(diff / 3_600_000);
+//   const d = Math.floor(diff / 86_400_000);
+//   if (m < 1) return "Just now";
+//   if (h < 1) return `${m}m ago`;
+//   if (d < 1) return `${h}h ago`;
+//   return `${d}d ago`;
+// }
+
+// function syncColor(iso: string | null): string {
+//   if (!iso) return D.red;
+//   const h = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+//   if (h < 24) return D.green;
+//   if (h < 72) return D.amber;
+//   return D.red;
+// }
+
+// function indexOrder(idx: string): number {
+//   if (!idx) return 999;
+//   return (
+//     idx.charCodeAt(0) -
+//     65 +
+//     (idx.length > 1 ? (parseInt(idx.slice(1), 10) || 0) * 26 : 0)
+//   );
+// }
+
+// function pctColor(pct: number): string {
+//   if (pct === 100) return D.green;
+//   if (pct >= 70) return D.teal;
+//   if (pct >= 40) return D.amber;
+//   if (pct > 0) return "#fb923c";
+//   return "rgba(255,255,255,0.18)";
+// }
+
+// /** Next unsolved problem in the most-active incomplete contest */
+// function getNextProblem(
+//   g: GroupWithProblems,
+// ): { index: string; name: string; url: string; contestName: string } | null {
+//   const byContest = new Map<string, CfGroupProblem[]>();
+//   for (const p of g.problems) {
+//     if (!byContest.has(p.contest_id)) byContest.set(p.contest_id, []);
+//     byContest.get(p.contest_id)!.push(p);
+//   }
+
+//   const contests = Array.from(byContest.entries())
+//     .map(([id, probs]) => {
+//       const solved = probs.filter((p) => p.cf_status === "solved").length;
+//       const total = probs.length;
+//       const pct = total > 0 ? solved / total : 0;
+//       return {
+//         id,
+//         probs,
+//         solved,
+//         total,
+//         pct,
+//         name: probs[0]?.contest_name ?? `Contest ${id}`,
+//       };
+//     })
+//     .filter((c) => c.pct < 1)
+//     .sort((a, b) => b.pct - a.pct); // most progress first
+
+//   for (const c of contests) {
+//     const unsolved = [...c.probs]
+//       .filter((p) => p.cf_status === "todo")
+//       .sort(
+//         (a, b) => indexOrder(a.problem_index) - indexOrder(b.problem_index),
+//       );
+//     if (unsolved.length > 0) {
+//       return {
+//         index: unsolved[0].problem_index,
+//         name: unsolved[0].problem_name,
+//         url: unsolved[0].problem_url,
+//         contestName: c.name,
+//       };
+//     }
+//   }
+//   return null;
+// }
+
+// /** 30-day solved activity bars from solved_at */
+// function get30DayActivity(problems: CfGroupProblem[]): number[] {
+//   const counts = Array<number>(30).fill(0);
+//   const now = Date.now();
+//   for (const p of problems) {
+//     if (p.cf_status !== "solved" || !p.solved_at) continue;
+//     const daysAgo = Math.floor(
+//       (now - new Date(p.solved_at).getTime()) / 86_400_000,
+//     );
+//     if (daysAgo >= 0 && daysAgo < 30) counts[29 - daysAgo]++;
+//   }
+//   return counts;
+// }
+
+// /** Contest pills — up to 6, sorted active → complete → todo */
+// function getContestPills(g: GroupWithProblems) {
+//   const map = new Map<string, CfGroupProblem[]>();
+//   for (const p of g.problems) {
+//     if (!map.has(p.contest_id)) map.set(p.contest_id, []);
+//     map.get(p.contest_id)!.push(p);
+//   }
+//   return Array.from(map.entries())
+//     .map(([id, probs]) => {
+//       const solved = probs.filter((p) => p.cf_status === "solved").length;
+//       const total = probs.length;
+//       const pct = total > 0 ? (solved / total) * 100 : 0;
+//       const name = probs[0]?.contest_name ?? `Contest ${id}`;
+//       return { id, name, pct, solved, total };
+//     })
+//     .sort((a, b) => {
+//       // active > complete > untouched
+//       const aActive = a.pct > 0 && a.pct < 100;
+//       const bActive = b.pct > 0 && b.pct < 100;
+//       if (aActive && !bActive) return -1;
+//       if (!aActive && bActive) return 1;
+//       if (a.pct === 100 && b.pct !== 100) return -1;
+//       if (b.pct === 100 && a.pct !== 100) return 1;
+//       return b.solved - a.solved;
+//     })
+//     .slice(0, 6);
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // ANIMATED COUNTER
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function Counter({
+//   value,
+//   duration = 1.3,
+// }: {
+//   value: number;
+//   duration?: number;
+// }) {
+//   const mv = useMotionValue(0);
+//   const rounded = useTransform(mv, Math.round);
+//   const ref = useRef<HTMLSpanElement>(null);
+//   const inView = useInView(ref, { once: true });
+
+//   useEffect(() => {
+//     if (!inView) return;
+//     const ctrl = animate(mv, value, { duration, ease: [0.16, 1, 0.3, 1] });
+//     return ctrl.stop;
+//   }, [inView, value, mv, duration]);
+
+//   return <motion.span ref={ref}>{rounded}</motion.span>;
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // PROGRESS RING
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function ProgressRing({ pct, size = 80 }: { pct: number; size?: number }) {
+//   const sw = 5.5;
+//   const r = (size - sw * 2) / 2;
+//   const circ = 2 * Math.PI * r;
+//   const color = pctColor(pct);
+
+//   return (
+//     <svg
+//       width={size}
+//       height={size}
+//       style={{ transform: "rotate(-90deg)", flexShrink: 0 }}
+//       aria-label={`${Math.round(pct)}% progress`}
+//     >
+//       {/* Track */}
+//       <circle
+//         cx={size / 2}
+//         cy={size / 2}
+//         r={r}
+//         fill="none"
+//         stroke="rgba(255,255,255,0.06)"
+//         strokeWidth={sw}
+//       />
+//       {/* Glow halo */}
+//       <circle
+//         cx={size / 2}
+//         cy={size / 2}
+//         r={r}
+//         fill="none"
+//         stroke={color}
+//         strokeWidth={sw + 5}
+//         strokeOpacity={0.07}
+//       />
+//       {/* Progress arc */}
+//       <motion.circle
+//         cx={size / 2}
+//         cy={size / 2}
+//         r={r}
+//         fill="none"
+//         stroke={color}
+//         strokeWidth={sw}
+//         strokeLinecap="round"
+//         strokeDasharray={circ}
+//         initial={{ strokeDashoffset: circ }}
+//         animate={{ strokeDashoffset: circ - (pct / 100) * circ }}
+//         transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+//       />
+//     </svg>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // MINI ACTIVITY STRIP
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function ActivityStrip({ problems }: { problems: CfGroupProblem[] }) {
+//   const bars = useMemo(() => get30DayActivity(problems), [problems]);
+//   const ref = useRef<HTMLDivElement>(null);
+//   const inView = useInView(ref, { once: true });
+//   const maxBar = Math.max(...bars, 1);
+
+//   const hasSolves = bars.some((b) => b > 0);
+//   if (!hasSolves) {
+//     return (
+//       <div
+//         ref={ref}
+//         style={{ height: 28, display: "flex", alignItems: "center" }}
+//       >
+//         <span style={{ fontSize: 9, color: D.muted, fontFamily: D.mono }}>
+//           no activity yet
+//         </span>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div
+//       ref={ref}
+//       style={{
+//         display: "flex",
+//         alignItems: "flex-end",
+//         gap: 1.5,
+//         height: 28,
+//       }}
+//       aria-label="30-day solve activity"
+//     >
+//       {bars.map((count, i) => {
+//         const isToday = i === bars.length - 1;
+//         const hPct = count === 0 ? 8 : Math.max((count / maxBar) * 100, 18);
+//         const alpha = 0.2 + (count / maxBar) * 0.7;
+
+//         return (
+//           <motion.div
+//             key={i}
+//             initial={{ scaleY: 0, opacity: 0 }}
+//             animate={inView ? { scaleY: 1, opacity: 1 } : {}}
+//             transition={{
+//               scaleY: { duration: 0.35, delay: i * 0.012, ease: EASE },
+//               opacity: { duration: 0.2, delay: i * 0.012 },
+//             }}
+//             style={{
+//               flex: 1,
+//               height: `${hPct}%`,
+//               borderRadius: "2px 2px 1px 1px",
+//               background:
+//                 count === 0
+//                   ? "rgba(255,255,255,0.05)"
+//                   : isToday
+//                     ? D.teal
+//                     : `rgba(0,212,170,${alpha})`,
+//               transformOrigin: "bottom",
+//               boxShadow:
+//                 isToday && count > 0 ? "0 0 6px rgba(0,212,170,0.4)" : "none",
+//             }}
+//           />
+//         );
+//       })}
+//     </div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // CONTEST PILLS
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function ContestPills({ g }: { g: GroupWithProblems }) {
+//   const ref = useRef<HTMLDivElement>(null);
+//   const inView = useInView(ref, { once: true });
+//   const pills = useMemo(() => getContestPills(g), [g]);
+
+//   return (
+//     <div ref={ref} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+//       {pills.map((c, i) => {
+//         const col = pctColor(c.pct);
+//         return (
+//           <motion.div
+//             key={c.id}
+//             initial={{ opacity: 0, scale: 0.8 }}
+//             animate={inView ? { opacity: 1, scale: 1 } : {}}
+//             transition={{
+//               delay: 0.06 + i * 0.055,
+//               type: "spring",
+//               stiffness: 400,
+//               damping: 22,
+//             }}
+//             title={`${c.name}: ${c.solved}/${c.total}`}
+//             style={{
+//               display: "flex",
+//               alignItems: "center",
+//               gap: 4,
+//               padding: "2px 7px",
+//               borderRadius: 5,
+//               background: `${col}12`,
+//               border: `1px solid ${col}28`,
+//               maxWidth: 110,
+//               overflow: "hidden",
+//             }}
+//           >
+//             {/* Tiny fill bar */}
+//             <div
+//               style={{
+//                 position: "relative",
+//                 width: 22,
+//                 height: 3,
+//                 borderRadius: 2,
+//                 background: "rgba(255,255,255,0.08)",
+//                 flexShrink: 0,
+//               }}
+//             >
+//               <motion.div
+//                 initial={{ width: 0 }}
+//                 animate={inView ? { width: `${c.pct}%` } : {}}
+//                 transition={{
+//                   duration: 0.5,
+//                   delay: 0.2 + i * 0.05,
+//                   ease: EASE,
+//                 }}
+//                 style={{
+//                   position: "absolute",
+//                   left: 0,
+//                   top: 0,
+//                   bottom: 0,
+//                   borderRadius: 2,
+//                   background: col,
+//                 }}
+//               />
+//             </div>
+//             <span
+//               style={{
+//                 fontSize: 9.5,
+//                 fontFamily: D.mono,
+//                 color: col,
+//                 fontWeight: 600,
+//                 overflow: "hidden",
+//                 textOverflow: "ellipsis",
+//                 whiteSpace: "nowrap",
+//                 maxWidth: 68,
+//               }}
+//             >
+//               {c.name.length > 9 ? c.name.slice(0, 8) + "…" : c.name}
+//             </span>
+//           </motion.div>
+//         );
+//       })}
+//       {getContestPills(g).length < g.problems.length &&
+//         (() => {
+//           const totalContests = new Set(g.problems.map((p) => p.contest_id))
+//             .size;
+//           const shown = Math.min(totalContests, 6);
+//           if (totalContests <= 6) return null;
+//           return (
+//             <span
+//               style={{
+//                 fontSize: 9,
+//                 color: D.muted,
+//                 fontFamily: D.mono,
+//                 padding: "2px 6px",
+//                 alignSelf: "center",
+//               }}
+//             >
+//               +{totalContests - shown}
+//             </span>
+//           );
+//         })()}
+//     </div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // GROUP CARD — main interactive tile
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function GroupCard({ g, index }: { g: GroupWithProblems; index: number }) {
+//   const cardRef = useRef<HTMLDivElement>(null);
+//   const inView = useInView(cardRef, { once: true, margin: "-40px" });
+//   const [glow, setGlow] = useState({ x: 50, y: 50 });
+//   const [hovered, setHovered] = useState(false);
+
+//   const nextProblem = useMemo(() => getNextProblem(g), [g]);
+//   const color = pctColor(g.progress_pct);
+//   const isComplete = g.progress_pct === 100;
+
+//   // Mouse-tracking radial glow (MagicCard effect)
+//   const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+//     const rect = cardRef.current?.getBoundingClientRect();
+//     if (!rect) return;
+//     setGlow({
+//       x: ((e.clientX - rect.left) / rect.width) * 100,
+//       y: ((e.clientY - rect.top) / rect.height) * 100,
+//     });
+//   }, []);
+
+//   const totalContests = useMemo(
+//     () => new Set(g.problems.map((p) => p.contest_id)).size,
+//     [g.problems],
+//   );
+//   const completedContests = useMemo(() => {
+//     const map = new Map<string, { solved: number; total: number }>();
+//     for (const p of g.problems) {
+//       const c = map.get(p.contest_id) ?? { solved: 0, total: 0 };
+//       map.set(p.contest_id, {
+//         solved: c.solved + (p.cf_status === "solved" ? 1 : 0),
+//         total: c.total + 1,
+//       });
+//     }
+//     return Array.from(map.values()).filter(
+//       (c) => c.solved === c.total && c.total > 0,
+//     ).length;
+//   }, [g.problems]);
+
+//   return (
+//     <motion.div
+//       ref={cardRef}
+//       initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+//       animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+//       transition={{ duration: 0.48, delay: index * 0.07, ease: EASE }}
+//       onMouseMove={onMouseMove}
+//       onMouseEnter={() => setHovered(true)}
+//       onMouseLeave={() => setHovered(false)}
+//       style={{
+//         position: "relative",
+//         background: D.surface,
+//         border: `1px solid ${hovered ? "rgba(0,212,170,0.18)" : D.border}`,
+//         borderRadius: 16,
+//         overflow: "hidden",
+//         display: "flex",
+//         flexDirection: "column",
+//         transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+//         transform: hovered ? "translateY(-3px)" : "translateY(0)",
+//         boxShadow: hovered
+//           ? "0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,212,170,0.08)"
+//           : "0 4px 16px rgba(0,0,0,0.25)",
+//         cursor: "default",
+//       }}
+//     >
+//       {/* Mouse-following radial glow */}
+//       <div
+//         aria-hidden
+//         style={{
+//           position: "absolute",
+//           inset: 0,
+//           background: `radial-gradient(circle at ${glow.x}% ${glow.y}%, rgba(0,212,170,${hovered ? 0.065 : 0}) 0%, transparent 65%)`,
+//           transition: "background 0.1s",
+//           pointerEvents: "none",
+//           borderRadius: 16,
+//           zIndex: 0,
+//         }}
+//       />
+
+//       {/* Top accent line — color by progress */}
+//       <motion.div
+//         initial={{ scaleX: 0 }}
+//         animate={inView ? { scaleX: 1 } : {}}
+//         transition={{ duration: 0.9, delay: index * 0.07 + 0.25, ease: EASE }}
+//         style={{
+//           position: "absolute",
+//           top: 0,
+//           left: 0,
+//           right: 0,
+//           height: 2,
+//           background: `linear-gradient(90deg, ${color}, transparent)`,
+//           transformOrigin: "left",
+//           opacity: 0.7,
+//           zIndex: 1,
+//         }}
+//       />
+
+//       {/* Content */}
+//       <div
+//         style={{
+//           position: "relative",
+//           zIndex: 1,
+//           padding: "18px 20px",
+//           display: "flex",
+//           flexDirection: "column",
+//           gap: 14,
+//           flex: 1,
+//         }}
+//       >
+//         {/* ── HEADER ───────────────────────────────────────────────────── */}
+//         <div
+//           style={{
+//             display: "flex",
+//             alignItems: "flex-start",
+//             justifyContent: "space-between",
+//             gap: 8,
+//           }}
+//         >
+//           <div style={{ minWidth: 0, flex: 1 }}>
+//             <h3
+//               style={{
+//                 margin: 0,
+//                 fontSize: 14.5,
+//                 fontWeight: 700,
+//                 color: D.primary,
+//                 letterSpacing: "-0.02em",
+//                 lineHeight: 1.3,
+//                 fontFamily: D.sans,
+//                 overflow: "hidden",
+//                 textOverflow: "ellipsis",
+//                 whiteSpace: "nowrap",
+//               }}
+//             >
+//               {g.group_name}
+//             </h3>
+
+//             {/* Sync status */}
+//             <div
+//               style={{
+//                 display: "flex",
+//                 alignItems: "center",
+//                 gap: 5,
+//                 marginTop: 4,
+//               }}
+//             >
+//               <motion.div
+//                 animate={{ opacity: [1, 0.3, 1] }}
+//                 transition={{
+//                   repeat: Infinity,
+//                   duration: 2.4,
+//                   ease: "easeInOut",
+//                 }}
+//                 style={{
+//                   width: 5,
+//                   height: 5,
+//                   borderRadius: "50%",
+//                   background: syncColor(g.last_synced),
+//                   flexShrink: 0,
+//                 }}
+//               />
+//               <span
+//                 style={{ fontSize: 10, color: D.muted, fontFamily: D.mono }}
+//               >
+//                 {g.last_synced
+//                   ? `synced ${formatTimeAgo(g.last_synced)}`
+//                   : "never synced"}
+//               </span>
+//             </div>
+//           </div>
+
+//           {/* CF link + complete badge */}
+//           <div
+//             style={{
+//               display: "flex",
+//               alignItems: "center",
+//               gap: 6,
+//               flexShrink: 0,
+//             }}
+//           >
+//             {isComplete && (
+//               <motion.span
+//                 initial={{ opacity: 0, scale: 0.6 }}
+//                 animate={{ opacity: 1, scale: 1 }}
+//                 transition={{
+//                   type: "spring",
+//                   stiffness: 500,
+//                   damping: 22,
+//                   delay: 0.5,
+//                 }}
+//                 style={{
+//                   fontSize: 9,
+//                   fontWeight: 700,
+//                   color: D.green,
+//                   background: "rgba(74,222,128,0.1)",
+//                   border: "1px solid rgba(74,222,128,0.25)",
+//                   borderRadius: 5,
+//                   padding: "2px 6px",
+//                   letterSpacing: "0.06em",
+//                   fontFamily: D.mono,
+//                 }}
+//               >
+//                 COMPLETE
+//               </motion.span>
+//             )}
+//             {g.group_url && (
+//               <a
+//                 href={g.group_url}
+//                 target="_blank"
+//                 rel="noopener noreferrer"
+//                 style={{
+//                   display: "flex",
+//                   alignItems: "center",
+//                   justifyContent: "center",
+//                   width: 26,
+//                   height: 26,
+//                   background: "rgba(255,255,255,0.04)",
+//                   border: "1px solid rgba(255,255,255,0.08)",
+//                   borderRadius: 7,
+//                   color: hovered ? D.teal : D.muted,
+//                   transition: "color 0.15s, border-color 0.15s",
+//                   textDecoration: "none",
+//                 }}
+//                 onClick={(e) => e.stopPropagation()}
+//                 title="Open on Codeforces"
+//               >
+//                 <svg
+//                   width="11"
+//                   height="11"
+//                   viewBox="0 0 24 24"
+//                   fill="none"
+//                   stroke="currentColor"
+//                   strokeWidth="2.2"
+//                   strokeLinecap="round"
+//                 >
+//                   <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+//                   <polyline points="15 3 21 3 21 9" />
+//                   <line x1="10" y1="14" x2="21" y2="3" />
+//                 </svg>
+//               </a>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* ── PROGRESS ROW ─────────────────────────────────────────────── */}
+//         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+//           {/* Arc ring */}
+//           <div style={{ position: "relative", flexShrink: 0 }}>
+//             <ProgressRing pct={g.progress_pct} size={72} />
+//             <div
+//               style={{
+//                 position: "absolute",
+//                 inset: 0,
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 alignItems: "center",
+//                 justifyContent: "center",
+//               }}
+//             >
+//               <span
+//                 style={{
+//                   fontSize: 15,
+//                   fontWeight: 800,
+//                   color: color,
+//                   fontFamily: D.mono,
+//                   letterSpacing: "-0.04em",
+//                   lineHeight: 1,
+//                 }}
+//               >
+//                 <Counter value={Math.round(g.progress_pct)} />%
+//               </span>
+//             </div>
+//           </div>
+
+//           {/* Stats grid */}
+//           <div
+//             style={{
+//               display: "grid",
+//               gridTemplateColumns: "1fr 1fr",
+//               gap: "6px 16px",
+//               flex: 1,
+//             }}
+//           >
+//             {[
+//               { label: "Solved", value: g.solved_count, color: D.teal },
+//               { label: "Todo", value: g.todo_count, color: D.secondary },
+//               {
+//                 label: "Tried",
+//                 value: g.attempted_count,
+//                 color: g.attempted_count > 0 ? D.amber : D.muted,
+//               },
+//               { label: "Total", value: g.total_problems, color: D.muted },
+//             ].map((s) => (
+//               <div key={s.label}>
+//                 <div
+//                   style={{
+//                     fontSize: 15.5,
+//                     fontWeight: 800,
+//                     color: s.color,
+//                     fontFamily: D.mono,
+//                     letterSpacing: "-0.04em",
+//                     lineHeight: 1,
+//                   }}
+//                 >
+//                   <Counter value={s.value} />
+//                 </div>
+//                 <div
+//                   style={{
+//                     fontSize: 9,
+//                     color: D.muted,
+//                     fontFamily: D.sans,
+//                     marginTop: 1,
+//                   }}
+//                 >
+//                   {s.label}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Contests completed chip */}
+//         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+//           <div
+//             style={{
+//               fontSize: 9.5,
+//               fontFamily: D.mono,
+//               color: D.muted,
+//               background: "rgba(255,255,255,0.04)",
+//               border: `1px solid ${D.border}`,
+//               borderRadius: 5,
+//               padding: "2px 8px",
+//               whiteSpace: "nowrap",
+//             }}
+//           >
+//             {completedContests}/{totalContests} contests done
+//           </div>
+
+//           {g.attempted_count > 0 && (
+//             <div
+//               style={{
+//                 fontSize: 9.5,
+//                 fontFamily: D.mono,
+//                 color: D.amber,
+//                 background: "rgba(251,191,36,0.08)",
+//                 border: "1px solid rgba(251,191,36,0.18)",
+//                 borderRadius: 5,
+//                 padding: "2px 8px",
+//                 whiteSpace: "nowrap",
+//               }}
+//             >
+//               {g.attempted_count} stuck
+//             </div>
+//           )}
+//         </div>
+
+//         {/* ── CONTEST PILLS ────────────────────────────────────────────── */}
+//         <div>
+//           <div
+//             style={{
+//               fontSize: 8.5,
+//               fontWeight: 700,
+//               color: D.muted,
+//               textTransform: "uppercase",
+//               letterSpacing: "0.1em",
+//               fontFamily: D.mono,
+//               marginBottom: 6,
+//             }}
+//           >
+//             Contests
+//           </div>
+//           <ContestPills g={g} />
+//         </div>
+
+//         {/* ── ACTIVITY STRIP ───────────────────────────────────────────── */}
+//         <div>
+//           <div
+//             style={{
+//               display: "flex",
+//               alignItems: "center",
+//               justifyContent: "space-between",
+//               marginBottom: 5,
+//             }}
+//           >
+//             <span
+//               style={{
+//                 fontSize: 8.5,
+//                 fontWeight: 700,
+//                 color: D.muted,
+//                 textTransform: "uppercase",
+//                 letterSpacing: "0.1em",
+//                 fontFamily: D.mono,
+//               }}
+//             >
+//               30-day activity
+//             </span>
+//             <span style={{ fontSize: 8.5, color: D.muted, fontFamily: D.mono }}>
+//               {g.solved_count} solved total
+//             </span>
+//           </div>
+//           <ActivityStrip problems={g.problems} />
+//         </div>
+
+//         {/* ── NEXT PROBLEM ─────────────────────────────────────────────── */}
+//         {nextProblem && !isComplete && (
+//           <motion.div
+//             initial={{ opacity: 0 }}
+//             animate={inView ? { opacity: 1 } : {}}
+//             transition={{ delay: index * 0.07 + 0.45 }}
+//             style={{
+//               padding: "8px 10px",
+//               background: "rgba(0,212,170,0.04)",
+//               border: "1px solid rgba(0,212,170,0.1)",
+//               borderRadius: 8,
+//             }}
+//           >
+//             <div
+//               style={{
+//                 fontSize: 8.5,
+//                 fontWeight: 700,
+//                 color: "rgba(0,212,170,0.5)",
+//                 textTransform: "uppercase",
+//                 letterSpacing: "0.1em",
+//                 fontFamily: D.mono,
+//                 marginBottom: 4,
+//               }}
+//             >
+//               ⚡ Next up
+//             </div>
+//             <a
+//               href={nextProblem.url}
+//               target="_blank"
+//               rel="noopener noreferrer"
+//               style={{
+//                 fontSize: 11.5,
+//                 fontWeight: 600,
+//                 color: D.primary,
+//                 textDecoration: "none",
+//                 display: "block",
+//                 overflow: "hidden",
+//                 textOverflow: "ellipsis",
+//                 whiteSpace: "nowrap",
+//               }}
+//               onClick={(e) => e.stopPropagation()}
+//             >
+//               <span style={{ color: D.teal, fontFamily: D.mono }}>
+//                 {nextProblem.index}.
+//               </span>{" "}
+//               {nextProblem.name}
+//             </a>
+//             <span
+//               style={{
+//                 fontSize: 9.5,
+//                 color: D.muted,
+//                 fontFamily: D.mono,
+//                 overflow: "hidden",
+//                 textOverflow: "ellipsis",
+//                 whiteSpace: "nowrap",
+//                 display: "block",
+//                 marginTop: 2,
+//               }}
+//             >
+//               {nextProblem.contestName}
+//             </span>
+//           </motion.div>
+//         )}
+
+//         {isComplete && (
+//           <div
+//             style={{
+//               padding: "8px 10px",
+//               background: "rgba(74,222,128,0.04)",
+//               border: "1px solid rgba(74,222,128,0.1)",
+//               borderRadius: 8,
+//               textAlign: "center",
+//             }}
+//           >
+//             <span style={{ fontSize: 11, color: D.green, fontFamily: D.mono }}>
+//               🎯 All problems solved
+//             </span>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* ── FOOTER / CTA ──────────────────────────────────────────────── */}
+//       <Link
+//         href={`/dashboard2/groups/${g.group_code}`}
+//         style={{
+//           position: "relative",
+//           zIndex: 1,
+//           display: "flex",
+//           alignItems: "center",
+//           justifyContent: "space-between",
+//           padding: "11px 20px",
+//           borderTop: "1px solid rgba(255,255,255,0.05)",
+//           background: hovered ? "rgba(0,212,170,0.035)" : "transparent",
+//           textDecoration: "none",
+//           transition: "background 0.15s",
+//           flexShrink: 0,
+//         }}
+//       >
+//         <span
+//           style={{
+//             fontSize: 11,
+//             fontWeight: 600,
+//             color: hovered ? D.teal : D.secondary,
+//             fontFamily: D.sans,
+//             transition: "color 0.15s",
+//           }}
+//         >
+//           View Details
+//         </span>
+//         <motion.span
+//           animate={{ x: hovered ? 4 : 0 }}
+//           transition={{ duration: 0.18, ease: EASE }}
+//           style={{
+//             color: hovered ? D.teal : D.muted,
+//             display: "flex",
+//             alignItems: "center",
+//             transition: "color 0.15s",
+//           }}
+//         >
+//           <svg
+//             width="14"
+//             height="14"
+//             viewBox="0 0 24 24"
+//             fill="none"
+//             stroke="currentColor"
+//             strokeWidth="2.2"
+//             strokeLinecap="round"
+//           >
+//             <line x1="5" y1="12" x2="19" y2="12" />
+//             <polyline points="12 5 19 12 12 19" />
+//           </svg>
+//         </motion.span>
+//       </Link>
+//     </motion.div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // ADD GROUP CARD — dashed placeholder at end of grid
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function AddGroupCard() {
+//   const [hovered, setHovered] = useState(false);
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0 }}
+//       animate={{ opacity: 1 }}
+//       transition={{ delay: 0.4, duration: 0.5 }}
+//       onMouseEnter={() => setHovered(true)}
+//       onMouseLeave={() => setHovered(false)}
+//       style={{
+//         border: `1px dashed ${hovered ? "rgba(0,212,170,0.3)" : "rgba(255,255,255,0.09)"}`,
+//         borderRadius: 16,
+//         padding: "28px 24px",
+//         display: "flex",
+//         flexDirection: "column",
+//         alignItems: "center",
+//         justifyContent: "center",
+//         gap: 10,
+//         minHeight: 180,
+//         background: hovered ? "rgba(0,212,170,0.02)" : "transparent",
+//         transition: "border-color 0.2s, background 0.2s",
+//         cursor: "default",
+//       }}
+//     >
+//       <div
+//         style={{
+//           width: 36,
+//           height: 36,
+//           borderRadius: "50%",
+//           background: hovered
+//             ? "rgba(0,212,170,0.1)"
+//             : "rgba(255,255,255,0.04)",
+//           border: `1px solid ${hovered ? "rgba(0,212,170,0.25)" : "rgba(255,255,255,0.08)"}`,
+//           display: "flex",
+//           alignItems: "center",
+//           justifyContent: "center",
+//           transition: "background 0.2s, border-color 0.2s",
+//         }}
+//       >
+//         <svg
+//           width="14"
+//           height="14"
+//           viewBox="0 0 24 24"
+//           fill="none"
+//           stroke={hovered ? D.teal : D.muted}
+//           strokeWidth="2.2"
+//           strokeLinecap="round"
+//         >
+//           <line x1="12" y1="5" x2="12" y2="19" />
+//           <line x1="5" y1="12" x2="19" y2="12" />
+//         </svg>
+//       </div>
+//       <div style={{ textAlign: "center" }}>
+//         <div
+//           style={{
+//             fontSize: 11.5,
+//             fontWeight: 600,
+//             color: hovered ? D.secondary : D.muted,
+//             fontFamily: D.sans,
+//             transition: "color 0.15s",
+//           }}
+//         >
+//           Join another group
+//         </div>
+//         <div
+//           style={{
+//             fontSize: 10,
+//             color: D.muted,
+//             fontFamily: D.mono,
+//             marginTop: 3,
+//           }}
+//         >
+//           sync from the extension
+//         </div>
+//       </div>
+//     </motion.div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // EMPTY STATE
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function EmptyState() {
+//   const steps = [
+//     "Install the Memoize extension",
+//     "Open any CF Group you're in",
+//     "Click Sync — it appears here",
+//   ];
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, y: 16 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.5, ease: EASE }}
+//       style={{
+//         maxWidth: 420,
+//         margin: "40px auto",
+//         background: D.surface,
+//         border: `1px solid ${D.border}`,
+//         borderRadius: 16,
+//         padding: "32px 28px",
+//         fontFamily: D.mono,
+//       }}
+//     >
+//       <div
+//         style={{ fontSize: 11, color: "rgba(0,212,170,0.5)", marginBottom: 12 }}
+//       >
+//         <span style={{ color: D.teal }}>$</span> waiting for your first group
+//         <motion.span
+//           animate={{ opacity: [1, 0, 1] }}
+//           transition={{ repeat: Infinity, duration: 1 }}
+//           style={{ color: D.teal, marginLeft: 2 }}
+//         >
+//           ▌
+//         </motion.span>
+//       </div>
+
+//       <div
+//         style={{
+//           fontSize: 13,
+//           fontWeight: 600,
+//           color: D.primary,
+//           marginBottom: 16,
+//           fontFamily: D.sans,
+//         }}
+//       >
+//         How to add a CF Group
+//       </div>
+
+//       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+//         {steps.map((s, i) => (
+//           <motion.div
+//             key={i}
+//             initial={{ opacity: 0, x: -10 }}
+//             animate={{ opacity: 1, x: 0 }}
+//             transition={{ delay: 0.15 + i * 0.1, ease: EASE }}
+//             style={{ display: "flex", alignItems: "center", gap: 10 }}
+//           >
+//             <div
+//               style={{
+//                 width: 18,
+//                 height: 18,
+//                 borderRadius: "50%",
+//                 background: "rgba(0,212,170,0.1)",
+//                 border: "1px solid rgba(0,212,170,0.2)",
+//                 display: "flex",
+//                 alignItems: "center",
+//                 justifyContent: "center",
+//                 flexShrink: 0,
+//               }}
+//             >
+//               <span style={{ fontSize: 9, color: D.teal, fontWeight: 700 }}>
+//                 {i + 1}
+//               </span>
+//             </div>
+//             <span
+//               style={{ fontSize: 11.5, color: D.secondary, fontFamily: D.sans }}
+//             >
+//               {s}
+//             </span>
+//           </motion.div>
+//         ))}
+//       </div>
+//     </motion.div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // GLOBAL COMMAND BAR
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// function CommandBar({
+//   groups,
+//   lastSynced,
+//   cfAuth,
+// }: {
+//   groups: GroupWithProblems[];
+//   lastSynced: string | null;
+//   cfAuth: UserCfAuth | null;
+// }) {
+//   const totals = useMemo(() => {
+//     const solved = groups.reduce((s, g) => s + g.solved_count, 0);
+//     const total = groups.reduce((s, g) => s + g.total_problems, 0);
+//     const tried = groups.reduce((s, g) => s + g.attempted_count, 0);
+//     const overall = total > 0 ? Math.round((solved / total) * 100) : 0;
+//     return { solved, total, tried, overall };
+//   }, [groups]);
+
+//   const scColor = syncColor(lastSynced);
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, y: -10 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.4, ease: EASE }}
+//       style={{
+//         display: "flex",
+//         alignItems: "center",
+//         justifyContent: "space-between",
+//         flexWrap: "wrap",
+//         gap: 12,
+//         padding: "12px 18px",
+//         background: D.surface,
+//         border: `1px solid ${D.border}`,
+//         borderRadius: 12,
+//         marginBottom: 16,
+//       }}
+//     >
+//       {/* Stats */}
+//       <div
+//         style={{
+//           display: "flex",
+//           alignItems: "center",
+//           gap: 20,
+//           flexWrap: "wrap",
+//         }}
+//       >
+//         {[
+//           { label: "groups", value: groups.length, color: D.secondary },
+//           { label: "solved", value: totals.solved, color: D.teal },
+//           {
+//             label: "remaining",
+//             value: totals.total - totals.solved,
+//             color: D.muted,
+//           },
+//           {
+//             label: "stuck",
+//             value: totals.tried,
+//             color: totals.tried > 0 ? D.amber : D.muted,
+//           },
+//         ].map((s) => (
+//           <div
+//             key={s.label}
+//             style={{ display: "flex", alignItems: "baseline", gap: 4 }}
+//           >
+//             <span
+//               style={{
+//                 fontSize: 16,
+//                 fontWeight: 800,
+//                 fontFamily: D.mono,
+//                 color: s.color,
+//                 letterSpacing: "-0.04em",
+//                 lineHeight: 1,
+//               }}
+//             >
+//               <Counter value={s.value} />
+//             </span>
+//             <span style={{ fontSize: 9, color: D.muted, fontFamily: D.sans }}>
+//               {s.label}
+//             </span>
+//           </div>
+//         ))}
+
+//         {/* Overall % with mini ring */}
+//         <div
+//           style={{
+//             display: "flex",
+//             alignItems: "center",
+//             gap: 6,
+//             paddingLeft: 8,
+//             borderLeft: `1px solid rgba(255,255,255,0.07)`,
+//           }}
+//         >
+//           <svg width="28" height="28" style={{ transform: "rotate(-90deg)" }}>
+//             <circle
+//               cx={14}
+//               cy={14}
+//               r={10}
+//               fill="none"
+//               stroke="rgba(255,255,255,0.06)"
+//               strokeWidth={3.5}
+//             />
+//             <motion.circle
+//               cx={14}
+//               cy={14}
+//               r={10}
+//               fill="none"
+//               stroke={pctColor(totals.overall)}
+//               strokeWidth={3.5}
+//               strokeLinecap="round"
+//               strokeDasharray={62.83}
+//               initial={{ strokeDashoffset: 62.83 }}
+//               animate={{
+//                 strokeDashoffset: 62.83 - (totals.overall / 100) * 62.83,
+//               }}
+//               transition={{
+//                 duration: 1.5,
+//                 ease: [0.16, 1, 0.3, 1],
+//                 delay: 0.3,
+//               }}
+//             />
+//           </svg>
+//           <span
+//             style={{
+//               fontSize: 15,
+//               fontWeight: 800,
+//               fontFamily: D.mono,
+//               color: pctColor(totals.overall),
+//               letterSpacing: "-0.04em",
+//             }}
+//           >
+//             <Counter value={totals.overall} />%
+//           </span>
+//           <span style={{ fontSize: 9, color: D.muted, fontFamily: D.sans }}>
+//             overall
+//           </span>
+//         </div>
+//       </div>
+
+//       {/* Right: sync indicator */}
+//       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+//         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+//           <motion.div
+//             animate={{ opacity: [1, 0.3, 1] }}
+//             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+//             style={{
+//               width: 6,
+//               height: 6,
+//               borderRadius: "50%",
+//               background: scColor,
+//               flexShrink: 0,
+//               boxShadow: `0 0 5px ${scColor}`,
+//             }}
+//           />
+//           <span style={{ fontSize: 10.5, color: D.muted, fontFamily: D.mono }}>
+//             {lastSynced
+//               ? `Last sync: ${formatTimeAgo(lastSynced)}`
+//               : "Never synced"}
+//           </span>
+//         </div>
+
+//         {cfAuth?.cf_handle && (
+//           <div
+//             style={{
+//               fontSize: 10,
+//               fontFamily: D.mono,
+//               color: D.teal,
+//               background: "rgba(0,212,170,0.08)",
+//               border: "1px solid rgba(0,212,170,0.15)",
+//               borderRadius: 5,
+//               padding: "2px 8px",
+//             }}
+//           >
+//             @{cfAuth.cf_handle}
+//           </div>
+//         )}
+//       </div>
+//     </motion.div>
+//   );
+// }
+
+// // ─────────────────────────────────────────────────────────────────────────────
+// // MAIN
+// // ─────────────────────────────────────────────────────────────────────────────
+
+// export function GroupsClient({ groups, cfAuth, lastSynced, userId }: Props) {
+//   return (
+//     <div style={{ fontFamily: D.sans }}>
+//       {/* Global command bar */}
+//       {groups.length > 0 && (
+//         <CommandBar groups={groups} lastSynced={lastSynced} cfAuth={cfAuth} />
+//       )}
+
+//       {/* Grid */}
+//       {groups.length === 0 ? (
+//         <EmptyState />
+//       ) : (
+//         <div
+//           style={{
+//             display: "grid",
+//             gridTemplateColumns:
+//               "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
+//             gap: 16,
+//             alignItems: "start",
+//           }}
+//         >
+//           {groups.map((g, i) => (
+//             <GroupCard key={g.id} g={g} index={i} />
+//           ))}
+//           <AddGroupCard />
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
 "use client";
 
 import {
@@ -6,6 +1384,7 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useLayoutEffect,
 } from "react";
 import {
   motion,
@@ -14,35 +1393,51 @@ import {
   useMotionValue,
   useTransform,
   useInView,
+  useSpring,
 } from "framer-motion";
 import Link from "next/link";
-import type { CfGroup, CfGroupProblem } from "@/types";
+// import { SyncButton } from "./SyncButton";
+import { SyncButton } from "./group-detail/SyncButton";
+import type {
+  CfGroup,
+  CfGroupProblem,
+  UserCfAuth,
+  CfSyncStatus,
+} from "@/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ProblemWithContest = CfGroupProblem;
+type GroupWithProblems = CfGroup & { problems: CfGroupProblem[] };
 
-type ContestSummary = {
-  id: string;
-  name: string;
-  problems: ProblemWithContest[];
-  solved: number;
-  attempted: number;
-  todo: number;
-  total: number;
-  pct: number;
-};
+interface Props {
+  groups: GroupWithProblems[];
+  cfAuth: UserCfAuth | null;
+  lastSynced: string | null;
+  userId: string;
+}
 
-type DiffPoint = {
-  index: string;
-  total: number;
-  solved: number;
-  pct: number;
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// DESIGN TOKENS
+// ─────────────────────────────────────────────────────────────────────────────
 
-type StatusFilter = "all" | "todo" | "solved" | "attempted";
+const D = {
+  surface: "var(--bg-surface,  #111114)",
+  elevated: "var(--bg-elevated, #16161a)",
+  border: "rgba(255,255,255,0.07)",
+  muted: "var(--text-muted,     #52525b)",
+  secondary: "var(--text-secondary, #a1a1aa)",
+  primary: "var(--text-primary,   #f4f4f5)",
+  teal: "#00d4aa",
+  amber: "#fbbf24",
+  red: "#f87171",
+  green: "#4ade80",
+  mono: "var(--font-mono, 'JetBrains Mono', monospace)",
+  sans: "var(--font-sans, system-ui, sans-serif)",
+} as const;
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -51,54 +1446,148 @@ type StatusFilter = "all" | "todo" | "solved" | "attempted";
 function formatTimeAgo(iso: string | null): string {
   if (!iso) return "Never";
   const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(diff / 86400000);
+  const m = Math.floor(diff / 60_000);
+  const h = Math.floor(diff / 3_600_000);
+  const d = Math.floor(diff / 86_400_000);
   if (m < 1) return "Just now";
   if (h < 1) return `${m}m ago`;
   if (d < 1) return `${h}h ago`;
   return `${d}d ago`;
 }
 
-// Sort problem indexes correctly: A < B < ... < Z < A1 < B1 ...
+function syncColor(iso: string | null): string {
+  if (!iso) return D.red;
+  const h = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  if (h < 24) return D.green;
+  if (h < 72) return D.amber;
+  return D.red;
+}
+
 function indexOrder(idx: string): number {
   if (!idx) return 999;
-  const letter = idx.charCodeAt(0) - 65;
-  const num = idx.length > 1 ? parseInt(idx.slice(1), 10) || 0 : 0;
-  return letter + num * 26;
+  return (
+    idx.charCodeAt(0) -
+    65 +
+    (idx.length > 1 ? (parseInt(idx.slice(1), 10) || 0) * 26 : 0)
+  );
 }
 
-function barColor(pct: number): string {
-  if (pct >= 90) return "#00c853";
-  if (pct >= 70) return "#00d4aa";
-  if (pct >= 40) return "#ff9800";
-  if (pct > 0) return "#ff6b6b";
-  return "rgba(255,255,255,0.15)";
+function pctColor(pct: number): string {
+  if (pct === 100) return D.green;
+  if (pct >= 70) return D.teal;
+  if (pct >= 40) return D.amber;
+  if (pct > 0) return "#fb923c";
+  return "rgba(255,255,255,0.18)";
 }
 
-function contestDisplayName(name: string | null | undefined, id: string): string {
-  if (name && name.trim()) return name;
-  return `Contest ${id}`;
+/** Next unsolved problem in the most-active incomplete contest */
+function getNextProblem(
+  g: GroupWithProblems,
+): { index: string; name: string; url: string; contestName: string } | null {
+  const byContest = new Map<string, CfGroupProblem[]>();
+  for (const p of g.problems) {
+    if (!byContest.has(p.contest_id)) byContest.set(p.contest_id, []);
+    byContest.get(p.contest_id)!.push(p);
+  }
+
+  const contests = Array.from(byContest.entries())
+    .map(([id, probs]) => {
+      const solved = probs.filter((p) => p.cf_status === "solved").length;
+      const total = probs.length;
+      const pct = total > 0 ? solved / total : 0;
+      return {
+        id,
+        probs,
+        solved,
+        total,
+        pct,
+        name: probs[0]?.contest_name ?? `Contest ${id}`,
+      };
+    })
+    .filter((c) => c.pct < 1)
+    .sort((a, b) => b.pct - a.pct); // most progress first
+
+  for (const c of contests) {
+    const unsolved = [...c.probs]
+      .filter((p) => p.cf_status === "todo")
+      .sort(
+        (a, b) => indexOrder(a.problem_index) - indexOrder(b.problem_index),
+      );
+    if (unsolved.length > 0) {
+      return {
+        index: unsolved[0].problem_index,
+        name: unsolved[0].problem_name,
+        url: unsolved[0].problem_url,
+        contestName: c.name,
+      };
+    }
+  }
+  return null;
+}
+
+/** 30-day solved activity bars from solved_at */
+function get30DayActivity(problems: CfGroupProblem[]): number[] {
+  const counts = Array<number>(30).fill(0);
+  const now = Date.now();
+  for (const p of problems) {
+    if (p.cf_status !== "solved" || !p.solved_at) continue;
+    const daysAgo = Math.floor(
+      (now - new Date(p.solved_at).getTime()) / 86_400_000,
+    );
+    if (daysAgo >= 0 && daysAgo < 30) counts[29 - daysAgo]++;
+  }
+  return counts;
+}
+
+/** Contest pills — up to 6, sorted active → complete → todo */
+function getContestPills(g: GroupWithProblems) {
+  const map = new Map<string, CfGroupProblem[]>();
+  for (const p of g.problems) {
+    if (!map.has(p.contest_id)) map.set(p.contest_id, []);
+    map.get(p.contest_id)!.push(p);
+  }
+  return Array.from(map.entries())
+    .map(([id, probs]) => {
+      const solved = probs.filter((p) => p.cf_status === "solved").length;
+      const total = probs.length;
+      const pct = total > 0 ? (solved / total) * 100 : 0;
+      const name = probs[0]?.contest_name ?? `Contest ${id}`;
+      return { id, name, pct, solved, total };
+    })
+    .sort((a, b) => {
+      // active > complete > untouched
+      const aActive = a.pct > 0 && a.pct < 100;
+      const bActive = b.pct > 0 && b.pct < 100;
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      if (a.pct === 100 && b.pct !== 100) return -1;
+      if (b.pct === 100 && a.pct !== 100) return 1;
+      return b.solved - a.solved;
+    })
+    .slice(0, 6);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ANIMATED COUNTER
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Counter({ value, duration = 1.4 }: { value: number; duration?: number }) {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, Math.round);
+function Counter({
+  value,
+  duration = 1.3,
+}: {
+  value: number;
+  duration?: number;
+}) {
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, Math.round);
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
 
   useEffect(() => {
     if (!inView) return;
-    const ctrl = animate(count, value, {
-      duration,
-      ease: [0.16, 1, 0.3, 1],
-    });
+    const ctrl = animate(mv, value, { duration, ease: [0.16, 1, 0.3, 1] });
     return ctrl.stop;
-  }, [inView, value, count, duration]);
+  }, [inView, value, mv, duration]);
 
   return <motion.span ref={ref}>{rounded}</motion.span>;
 }
@@ -107,278 +1596,120 @@ function Counter({ value, duration = 1.4 }: { value: number; duration?: number }
 // PROGRESS RING
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ProgressRing({ pct, size = 124 }: { pct: number; size?: number }) {
-  const sw = 7;
+function ProgressRing({ pct, size = 80 }: { pct: number; size?: number }) {
+  const sw = 5.5;
   const r = (size - sw * 2) / 2;
   const circ = 2 * Math.PI * r;
-  const offset = circ - (pct / 100) * circ;
-  const color = pct === 100 ? "#00c853" : "#00d4aa";
+  const color = pctColor(pct);
 
   return (
-    <svg width={size} height={size} style={{ transform: "rotate(-90deg)", flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="rgba(255,255,255,0.07)" strokeWidth={sw} />
-      {/* Subtle glow track */}
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={sw + 4} strokeOpacity={0.06} />
+    <svg
+      width={size}
+      height={size}
+      style={{ transform: "rotate(-90deg)", flexShrink: 0 }}
+      aria-label={`${Math.round(pct)}% progress`}
+    >
+      {/* Track */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="rgba(255,255,255,0.06)"
+        strokeWidth={sw}
+      />
+      {/* Glow halo */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={sw + 5}
+        strokeOpacity={0.07}
+      />
+      {/* Progress arc */}
       <motion.circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={sw}
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={sw}
         strokeLinecap="round"
         strokeDasharray={circ}
         initial={{ strokeDashoffset: circ }}
-        animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+        animate={{ strokeDashoffset: circ - (pct / 100) * circ }}
+        transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
       />
     </svg>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STATUS BADGE
+// MINI ACTIVITY STRIP
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
-  const cfg = {
-    solved: { label: "Solved", bg: "rgba(0,200,83,0.12)", color: "#00c853" },
-    attempted: { label: "Attempted", bg: "rgba(255,152,0,0.12)", color: "#ff9800" },
-    todo: { label: "Todo", bg: "rgba(255,255,255,0.06)", color: "var(--text-secondary)" },
-  }[(status as "solved" | "attempted" | "todo")] ?? {
-    label: status, bg: "rgba(255,255,255,0.06)", color: "var(--text-secondary)",
-  };
-
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "2px 8px", borderRadius: 6,
-      background: cfg.bg, color: cfg.color,
-      fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
-    }}>
-      <span style={{
-        width: 5, height: 5, borderRadius: "50%",
-        background: cfg.color, flexShrink: 0,
-      }} />
-      {cfg.label}
-    </span>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CONTEST BAR ROW
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ContestBarRow({
-  contest, isSelected, onSelect, delay,
-}: {
-  contest: ContestSummary;
-  isSelected: boolean;
-  onSelect: () => void;
-  delay: number;
-}) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(barRef, { once: true });
-  const isComplete = contest.pct === 100;
-  const isNotStarted = contest.pct === 0;
-  const color = barColor(contest.pct);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay, ease: [0.25, 0.4, 0.25, 1] }}
-      onClick={onSelect}
-      style={{
-        padding: "12px 14px",
-        borderRadius: 10,
-        border: isSelected
-          ? "1px solid rgba(0,212,170,0.35)"
-          : "1px solid rgba(255,255,255,0.05)",
-        background: isSelected
-          ? "rgba(0,212,170,0.06)"
-          : "rgba(255,255,255,0.02)",
-        cursor: "pointer",
-        transition: "border-color 0.2s, background 0.2s",
-        position: "relative",
-        overflow: "hidden",
-      }}
-      whileHover={{
-        borderColor: isSelected ? "rgba(0,212,170,0.4)" : "rgba(0,212,170,0.18)",
-        backgroundColor: isSelected ? "rgba(0,212,170,0.06)" : "rgba(0,212,170,0.02)",
-      }}
-    >
-      {/* Left accent bar */}
-      <AnimatePresence>
-        {isSelected && (
-          <motion.div
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            exit={{ scaleY: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{
-              position: "absolute", left: 0, top: 0, bottom: 0,
-              width: 3, background: "#00d4aa",
-              borderRadius: "10px 0 0 10px",
-              transformOrigin: "top",
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <div style={{
-        display: "flex", alignItems: "center",
-        gap: 10, marginBottom: 8,
-      }}>
-        {/* Status icon */}
-        <div style={{
-          width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-          background: isComplete
-            ? "rgba(0,200,83,0.15)"
-            : isNotStarted
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,212,170,0.1)",
-          border: `1.5px solid ${isComplete
-            ? "rgba(0,200,83,0.4)"
-            : isNotStarted
-            ? "rgba(255,255,255,0.1)"
-            : "rgba(0,212,170,0.25)"}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          {isComplete ? (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-              stroke="#00c853" strokeWidth="3" strokeLinecap="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          ) : isNotStarted ? (
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
-          ) : (
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#00d4aa" }} />
-          )}
-        </div>
-
-        {/* Name */}
-        <span style={{
-          flex: 1, fontSize: 13, fontWeight: 500,
-          color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          transition: "color 0.15s",
-        }}>
-          {contest.name}
-        </span>
-
-        {/* Count + pct */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{
-            fontSize: 11, fontFamily: "var(--font-mono)",
-            color: "var(--text-secondary)",
-          }}>
-            {contest.solved}/{contest.total}
-          </span>
-          <span style={{
-            fontSize: 11, fontWeight: 700, color,
-            minWidth: 28, textAlign: "right",
-          }}>
-            {isComplete ? "✓" : isNotStarted ? "—" : `${Math.round(contest.pct)}%`}
-          </span>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div ref={barRef} style={{
-        height: 5, borderRadius: 3,
-        background: "rgba(255,255,255,0.06)", overflow: "hidden",
-      }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: inView ? `${contest.pct}%` : 0 }}
-          transition={{ duration: 0.9, delay: delay + 0.05, ease: [0.16, 1, 0.3, 1] }}
-          style={{
-            height: "100%", borderRadius: 3,
-            background: isComplete
-              ? "linear-gradient(90deg, #00c853, #00d4aa)"
-              : `linear-gradient(90deg, #00d4aa80, ${color})`,
-          }}
-        />
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DIFFICULTY CHART
-// ─────────────────────────────────────────────────────────────────────────────
-
-function DifficultyChart({ points }: { points: DiffPoint[] }) {
+function ActivityStrip({ problems }: { problems: CfGroupProblem[] }) {
+  const bars = useMemo(() => get30DayActivity(problems), [problems]);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
+  const maxBar = Math.max(...bars, 1);
 
-  if (points.length === 0) return null;
-
-  const getDropOffLabel = (pct: number, i: number, prev: number | null) => {
-    if (prev !== null && prev - pct > 20) return "↓ drop-off";
-    return null;
-  };
+  const hasSolves = bars.some((b) => b > 0);
+  if (!hasSolves) {
+    return (
+      <div
+        ref={ref}
+        style={{ height: 28, display: "flex", alignItems: "center" }}
+      >
+        <span style={{ fontSize: 9, color: D.muted, fontFamily: D.mono }}>
+          no activity yet
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-      {points.map((pt, i) => {
-        const prevPct = i > 0 ? points[i - 1].pct : null;
-        const dropOff = getDropOffLabel(pt.pct, i, prevPct);
-        const color = barColor(pt.pct);
+    <div
+      ref={ref}
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        gap: 1.5,
+        height: 28,
+      }}
+      aria-label="30-day solve activity"
+    >
+      {bars.map((count, i) => {
+        const isToday = i === bars.length - 1;
+        const hPct = count === 0 ? 4 : Math.max((count / maxBar) * 100, 16);
+        const alpha = 0.2 + (count / maxBar) * 0.7;
 
         return (
-          <div key={pt.index} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Index */}
-            <span style={{
-              width: 18, fontSize: 11, fontWeight: 700,
-              fontFamily: "var(--font-mono)", color,
-              textAlign: "center", flexShrink: 0,
-            }}>
-              {pt.index}
-            </span>
-
-            {/* Track */}
-            <div style={{
-              flex: 1, height: 7, borderRadius: 4,
-              background: "rgba(255,255,255,0.05)", overflow: "hidden",
-            }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: inView ? `${pt.pct}%` : 0 }}
-                transition={{
-                  duration: 0.75, delay: i * 0.055,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                style={{ height: "100%", borderRadius: 4, background: color }}
-              />
-            </div>
-
-            {/* Stats */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6,
-              flexShrink: 0, minWidth: 90,
-            }}>
-              <span style={{
-                fontSize: 10, fontFamily: "var(--font-mono)",
-                color: "var(--text-secondary)",
-              }}>
-                {pt.solved}/{pt.total}
-              </span>
-              <span style={{
-                fontSize: 10, fontWeight: 700, color,
-                minWidth: 30, textAlign: "right",
-              }}>
-                {Math.round(pt.pct)}%
-              </span>
-              {dropOff && (
-                <span style={{
-                  fontSize: 9, color: "#ff6b6b",
-                  fontWeight: 600, letterSpacing: "0.02em",
-                }}>
-                  {dropOff}
-                </span>
-              )}
-            </div>
-          </div>
+          <motion.div
+            key={i}
+            initial={{ scaleY: 0, opacity: 0 }}
+            animate={inView ? { scaleY: 1, opacity: 1 } : {}}
+            transition={{
+              scaleY: { duration: 0.35, delay: i * 0.012, ease: EASE },
+              opacity: { duration: 0.2, delay: i * 0.012 },
+            }}
+            style={{
+              flex: 1,
+              height: `${hPct}%`,
+              borderRadius: "2px 2px 1px 1px",
+              background:
+                count === 0
+                  ? "rgba(255,255,255,0.05)"
+                  : isToday
+                    ? D.teal
+                    : `rgba(0,212,170,${alpha})`,
+              transformOrigin: "bottom",
+              boxShadow:
+                isToday && count > 0 ? "0 0 6px rgba(0,212,170,0.4)" : "none",
+            }}
+          />
         );
       })}
     </div>
@@ -386,773 +1717,993 @@ function DifficultyChart({ points }: { points: DiffPoint[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROBLEM TABLE ROW
+// CONTEST PILLS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ProblemRow({
-  problem,
-  contestName,
-}: {
-  problem: ProblemWithContest;
-  contestName: string;
-}) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "28px 1fr 100px 90px 30px",
-        alignItems: "center",
-        gap: 12,
-        padding: "9px 16px",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
-        transition: "background 0.12s",
-      }}
-      whileHover={{ backgroundColor: "rgba(255,255,255,0.025)" }}
-    >
-      {/* Index */}
-      <span style={{
-        fontSize: 11, fontFamily: "var(--font-mono)",
-        fontWeight: 700, color: "rgba(0,212,170,0.6)",
-        textAlign: "center",
-      }}>
-        {problem.problem_index}
-      </span>
-
-      {/* Name + contest subtitle */}
-      <div style={{ overflow: "hidden", minWidth: 0 }}>
-        <a
-          href={problem.problem_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontSize: 13, color: "var(--text-primary)",
-            textDecoration: "none",
-            display: "block",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            transition: "color 0.12s",
-          }}
-          onMouseOver={e => (e.currentTarget.style.color = "#00d4aa")}
-          onMouseOut={e => (e.currentTarget.style.color = "var(--text-primary)")}
-        >
-          {problem.problem_name}
-        </a>
-        <span style={{
-          fontSize: 10, color: "var(--text-secondary)",
-          overflow: "hidden", textOverflow: "ellipsis",
-          whiteSpace: "nowrap", display: "block", marginTop: 1,
-        }}>
-          {contestName}
-        </span>
-      </div>
-
-      {/* Status */}
-      <StatusBadge status={problem.cf_status} />
-
-      {/* Rating */}
-      <span style={{
-        fontSize: 11, fontFamily: "var(--font-mono)",
-        color: problem.cf_rating ? "#00d4aa" : "rgba(255,255,255,0.2)",
-        textAlign: "right",
-      }}>
-        {problem.cf_rating ?? "—"}
-      </span>
-
-      {/* Open link */}
-      <a
-        href={problem.problem_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "rgba(255,255,255,0.2)", transition: "color 0.12s",
-        }}
-        onMouseOver={e => (e.currentTarget.style.color = "#00d4aa")}
-        onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
-      </a>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STAT CARD (hero section)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function StatCard({
-  value, label, color, delay,
-}: {
-  value: number; label: string; color: string; delay: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay, ease: [0.25, 0.4, 0.25, 1] }}
-      style={{
-        padding: "14px 16px",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 10,
-        flex: 1, minWidth: 80,
-      }}
-    >
-      <div style={{
-        fontSize: 22, fontWeight: 700,
-        color, letterSpacing: "-0.02em", lineHeight: 1,
-      }}>
-        <Counter value={value} />
-      </div>
-      <div style={{
-        fontSize: 11, color: "var(--text-secondary)",
-        marginTop: 4, fontWeight: 500,
-      }}>
-        {label}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION WRAPPER
-// ─────────────────────────────────────────────────────────────────────────────
-
-function Section({
-  title, children, action, delay = 0,
-}: {
-  title: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.25, 0.4, 0.25, 1] }}
-      style={{
-        background: "var(--bg-surface)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 14,
-        overflow: "hidden",
-      }}
-    >
-      <div style={{
-        display: "flex", alignItems: "center",
-        justifyContent: "space-between",
-        padding: "16px 20px",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-      }}>
-        <span style={{
-          fontSize: 11, fontWeight: 700,
-          color: "var(--text-secondary)",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-        }}>
-          {title}
-        </span>
-        {action}
-      </div>
-      <div style={{ padding: "16px 20px" }}>
-        {children}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface GroupDetailClientProps {
-  group: CfGroup;
-  problems: ProblemWithContest[];
-  selectedContestId: string | null;
-  
-}
-
-export function GroupDetailClient({
-  group,
-  problems,
-  selectedContestId: initialSelected,
-}: GroupDetailClientProps) {
-  const [selectedContest, setSelectedContest] = useState<string | null>(initialSelected);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [search, setSearch] = useState("");
-  const tableRef = useRef<HTMLDivElement>(null);
-
-  // ── Derive contests ─────────────────────────────────────────────────────
-  const contests = useMemo<ContestSummary[]>(() => {
-    const map = new Map<string, ProblemWithContest[]>();
-    for (const p of problems) {
-      if (!map.has(p.contest_id)) map.set(p.contest_id, []);
-      map.get(p.contest_id)!.push(p);
-    }
-
-    return Array.from(map.entries())
-      .map(([id, probs]) => {
-        const sorted = [...probs].sort(
-          (a, b) => indexOrder(a.problem_index) - indexOrder(b.problem_index)
-        );
-        const solved = probs.filter(p => p.cf_status === "solved").length;
-        const attempted = probs.filter(p => p.cf_status === "attempted").length;
-        const todo = probs.filter(p => p.cf_status === "todo").length;
-        const total = probs.length;
-        const pct = total > 0 ? (solved / total) * 100 : 0;
-        const name = contestDisplayName(probs[0]?.contest_name, id);
-        return { id, name, problems: sorted, solved, attempted, todo, total, pct };
-      })
-      // Sort: in-progress first, then complete, then not started
-      .sort((a, b) => {
-        if (a.pct > 0 && a.pct < 100 && (b.pct === 0 || b.pct === 100)) return -1;
-        if (b.pct > 0 && b.pct < 100 && (a.pct === 0 || a.pct === 100)) return 1;
-        if (a.pct === 100 && b.pct !== 100) return -1;
-        if (b.pct === 100 && a.pct !== 100) return 1;
-        return b.solved - a.solved;
-      });
-  }, [problems]);
-
-  // ── Difficulty curve ────────────────────────────────────────────────────
-  const diffPoints = useMemo<DiffPoint[]>(() => {
-    const map = new Map<string, { total: number; solved: number }>();
-    for (const p of problems) {
-      const cur = map.get(p.problem_index) ?? { total: 0, solved: 0 };
-      map.set(p.problem_index, {
-        total: cur.total + 1,
-        solved: cur.solved + (p.cf_status === "solved" ? 1 : 0),
-      });
-    }
-    return Array.from(map.entries())
-      .map(([index, { total, solved }]) => ({
-        index, total, solved,
-        pct: total > 0 ? (solved / total) * 100 : 0,
-      }))
-      .sort((a, b) => indexOrder(a.index) - indexOrder(b.index));
-  }, [problems]);
-
-  // ── Contest name lookup ─────────────────────────────────────────────────
-  const contestNameMap = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const c of contests) m.set(c.id, c.name);
-    return m;
-  }, [contests]);
-
-  // ── Next unsolved problem ───────────────────────────────────────────────
-  const nextProblem = useMemo(() => {
-    const incomplete = [...contests]
-      .filter(c => c.pct < 100)
-      .sort((a, b) => {
-        // Prefer in-progress over not-started
-        if (a.pct > 0 && b.pct === 0) return -1;
-        if (b.pct > 0 && a.pct === 0) return 1;
-        return b.pct - a.pct;
-      })[0];
-
-    if (!incomplete) return null;
-    const first = incomplete.problems.find(p => p.cf_status === "todo");
-    if (!first) return null;
-    return { problem: first, contestName: incomplete.name };
-  }, [contests]);
-
-  // ── Filtered problems for table ─────────────────────────────────────────
-  const filteredProblems = useMemo(() => {
-    let list: ProblemWithContest[] = selectedContest
-      ? problems.filter(p => p.contest_id === selectedContest)
-      : problems;
-
-    if (statusFilter !== "all") {
-      list = list.filter(p => p.cf_status === statusFilter);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        p =>
-          p.problem_name.toLowerCase().includes(q) ||
-          p.problem_index.toLowerCase() === q
-      );
-    }
-
-    return [...list].sort((a, b) => {
-      if (a.contest_id !== b.contest_id)
-        return a.contest_id.localeCompare(b.contest_id);
-      return indexOrder(a.problem_index) - indexOrder(b.problem_index);
-    });
-  }, [problems, selectedContest, statusFilter, search]);
-
-  // ── Filter counts ────────────────────────────────────────────────────────
-  const counts = useMemo(() => {
-    const base = selectedContest
-      ? problems.filter(p => p.contest_id === selectedContest)
-      : problems;
-    return {
-      all: base.length,
-      todo: base.filter(p => p.cf_status === "todo").length,
-      solved: base.filter(p => p.cf_status === "solved").length,
-      attempted: base.filter(p => p.cf_status === "attempted").length,
-    };
-  }, [problems, selectedContest]);
-
-  const completedContests = contests.filter(c => c.pct === 100).length;
-  const pct = group.progress_pct ?? 0;
-
-  // ── Contest select → scroll to table ────────────────────────────────────
-  const handleContestSelect = useCallback((id: string) => {
-    setSelectedContest(prev => prev === id ? null : id);
-    setStatusFilter("all");
-    setSearch("");
-    setTimeout(() => {
-      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  }, []);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────────────
+function ContestPills({ g }: { g: GroupWithProblems }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true });
+  const pills = useMemo(() => getContestPills(g), [g]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-      {/* ── Back navigation ─────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, x: -12 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Link
-          href="/dashboard/groups"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            fontSize: 12, fontWeight: 500,
-            color: "var(--text-secondary)",
-            textDecoration: "none",
-            padding: "4px 0",
-            transition: "color 0.15s",
-          }}
-          onMouseOver={(e: any) => (e.currentTarget.style.color = "#00d4aa")}
-          onMouseOut={(e: any) => (e.currentTarget.style.color = "var(--text-secondary)")}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          CF Groups
-        </Link>
-      </motion.div>
-
-      {/* ── Hero section ────────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: 14,
-          padding: "24px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Ambient glow */}
-        <div style={{
-          position: "absolute", top: -60, right: -60,
-          width: 200, height: 200, borderRadius: "50%",
-          background: `radial-gradient(circle, rgba(0,212,170,${pct / 500}) 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }} />
-
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
-          {/* Progress ring + pct */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <ProgressRing pct={pct} size={124} />
-            <div style={{
-              position: "absolute", inset: 0,
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              gap: 1,
-            }}>
-              <span style={{
-                fontSize: 22, fontWeight: 800,
-                color: "var(--text-primary)",
-                letterSpacing: "-0.03em", lineHeight: 1,
-              }}>
-                <Counter value={pct} />%
-              </span>
-              <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                complete
-              </span>
-            </div>
-          </div>
-
-          {/* Right side info */}
-          <div style={{ flex: 1, minWidth: 200 }}>
-            {/* Group name + external link */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <h2 style={{
-                fontSize: 18, fontWeight: 700,
-                color: "var(--text-primary)",
-                letterSpacing: "-0.02em", margin: 0,
-              }}>
-                {group.group_name}
-              </h2>
-              {group.group_url && (
-                <a
-                  href={group.group_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "var(--text-secondary)", transition: "color 0.15s" }}
-                  onMouseOver={(e: any) => (e.currentTarget.style.color = "#00d4aa")}
-                  onMouseOut={(e: any) => (e.currentTarget.style.color = "var(--text-secondary)")}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-              )}
-            </div>
-
-            {/* Stat cards row */}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <StatCard value={group.solved_count ?? 0} label="Solved" color="#00c853" delay={0.15} />
-              <StatCard value={group.todo_count ?? 0} label="To Do" color="var(--text-secondary)" delay={0.2} />
-              <StatCard value={group.attempted_count ?? 0} label="Attempted" color="#ff9800" delay={0.25} />
-              <StatCard value={contests.length} label="Contests" color="#00d4aa" delay={0.3} />
-              <StatCard value={completedContests} label="Finished" color="#00c853" delay={0.35} />
-            </div>
-
-            {/* Continue CTA + last synced */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-              {nextProblem && (
-                <motion.a
-                  href={nextProblem.problem.problem_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5, duration: 0.3 }}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 7,
-                    padding: "8px 16px",
-                    background: "rgba(0,212,170,0.12)",
-                    border: "1px solid rgba(0,212,170,0.3)",
-                    borderRadius: 9,
-                    color: "#00d4aa",
-                    fontSize: 12, fontWeight: 700,
-                    textDecoration: "none",
-                    transition: "all 0.15s",
-                  }}
-                  whileHover={{
-                    background: "rgba(0,212,170,0.18)",
-                    borderColor: "rgba(0,212,170,0.5)",
-                    scale: 1.02,
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <polygon points="5 3 19 12 5 21 5 3" />
-                  </svg>
-                  Continue: {nextProblem.problem.problem_index} · {nextProblem.problem.problem_name.slice(0, 24)}{nextProblem.problem.problem_name.length > 24 ? "..." : ""}
-                </motion.a>
-              )}
-
-              {group.last_synced && (
-                <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                  Synced {formatTimeAgo(group.last_synced)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── Two-column: Contests + Difficulty chart ──────────────────────── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 340px",
-        gap: 16,
-      }}>
-
-        {/* Contest Breakdown */}
-        <Section title="Contests" delay={0.1}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            {contests.map((c, i) => (
-              <ContestBarRow
-                key={c.id}
-                contest={c}
-                isSelected={selectedContest === c.id}
-                onSelect={() => handleContestSelect(c.id)}
-                delay={0.05 * i}
-              />
-            ))}
-          </div>
-        </Section>
-
-        {/* Right column: Difficulty chart + insight */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-          {/* Difficulty Curve */}
-          <Section
-            title="Performance by position"
-            delay={0.15}
-            action={
-              <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                A = easiest → {diffPoints[diffPoints.length - 1]?.index ?? "?"} = hardest
-              </span>
-            }
+    <div ref={ref} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      {pills.map((c, i) => {
+        const col = pctColor(c.pct);
+        return (
+          <motion.div
+            key={c.id}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{
+              delay: 0.06 + i * 0.05,
+              type: "spring",
+              stiffness: 420,
+              damping: 24,
+            }}
+            title={`${c.name}: ${c.solved}/${c.total} solved`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "3px 8px",
+              borderRadius: 5,
+              background: `${col}10`,
+              border: `1px solid ${col}25`,
+            }}
           >
-            <DifficultyChart points={diffPoints} />
-          </Section>
-
-          {/* Insight card */}
-          {diffPoints.length > 0 && (() => {
-            const dropOff = diffPoints.find((p, i) =>
-              i > 0 && diffPoints[i - 1].pct - p.pct > 20
-            );
-            const weakest = [...diffPoints].sort((a, b) => a.pct - b.pct)[0];
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
-                style={{
-                  padding: "14px 16px",
-                  background: "rgba(0,212,170,0.04)",
-                  border: "1px solid rgba(0,212,170,0.1)",
-                  borderRadius: 10,
-                }}
-              >
-                <div style={{
-                  fontSize: 10, fontWeight: 700,
-                  color: "#00d4aa", letterSpacing: "0.08em",
-                  textTransform: "uppercase", marginBottom: 8,
-                }}>
-                  Insight
-                </div>
-                {dropOff ? (
-                  <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    Your solve rate drops at position{" "}
-                    <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                      {dropOff.index}
-                    </span>
-                    {" "}({Math.round(dropOff.pct)}% vs{" "}
-                    {Math.round(diffPoints[diffPoints.indexOf(dropOff) - 1]?.pct ?? 0)}% before).
-                    Focus here to improve your contest performance.
-                  </p>
-                ) : (
-                  <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    Your weakest position is{" "}
-                    <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                      {weakest.index}
-                    </span>{" "}
-                    at {Math.round(weakest.pct)}% solve rate. Prioritise those problems to level up.
-                  </p>
-                )}
-              </motion.div>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* ── Problem Explorer ─────────────────────────────────────────────── */}
-      <motion.div
-        ref={tableRef}
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.4, 0.25, 1] }}
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: 14,
-          overflow: "hidden",
-        }}
-      >
-        {/* Table header */}
-        <div style={{
-          display: "flex", alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 16px",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-          flexWrap: "wrap", gap: 10,
-        }}>
-          {/* Filter tabs */}
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {(["all", "todo", "solved", "attempted"] as StatusFilter[]).map(f => {
-              const labels: Record<StatusFilter, string> = {
-                all: `All (${counts.all})`,
-                todo: `Todo (${counts.todo})`,
-                solved: `Solved (${counts.solved})`,
-                attempted: `Tried (${counts.attempted})`,
-              };
-              const active = statusFilter === f;
-              return (
-                <button
-                  key={f}
-                  onClick={() => setStatusFilter(f)}
-                  style={{
-                    padding: "4px 10px", borderRadius: 6,
-                    border: active
-                      ? "1px solid rgba(0,212,170,0.35)"
-                      : "1px solid rgba(255,255,255,0.07)",
-                    background: active ? "rgba(0,212,170,0.1)" : "transparent",
-                    color: active ? "#00d4aa" : "var(--text-secondary)",
-                    fontSize: 11, fontWeight: 600,
-                    cursor: "pointer", transition: "all 0.15s",
-                  }}
-                >
-                  {labels[f]}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Selected contest indicator */}
-            <AnimatePresence>
-              {selectedContest && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "3px 8px",
-                    background: "rgba(0,212,170,0.08)",
-                    border: "1px solid rgba(0,212,170,0.2)",
-                    borderRadius: 6,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: "#00d4aa", fontWeight: 500, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {contestNameMap.get(selectedContest) ?? selectedContest}
-                  </span>
-                  <button
-                    onClick={() => setSelectedContest(null)}
-                    style={{
-                      background: "none", border: "none",
-                      color: "rgba(0,212,170,0.6)", cursor: "pointer",
-                      padding: 0, lineHeight: 1, fontSize: 14,
-                    }}
-                  >
-                    ×
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Search */}
-            <div style={{ position: "relative" }}>
-              <svg
-                style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }}
-                width="11" height="11" viewBox="0 0 24 24" fill="none"
-                stroke="var(--text-secondary)" strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{
-                  paddingLeft: 26, paddingRight: 10,
-                  paddingTop: 5, paddingBottom: 5,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 7,
-                  color: "var(--text-primary)",
-                  fontSize: 11,
-                  outline: "none",
-                  width: 140,
-                  transition: "border-color 0.15s",
-                }}
-                onFocus={e => (e.target.style.borderColor = "rgba(0,212,170,0.3)")}
-                onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Column headers */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "28px 1fr 100px 90px 30px",
-          gap: 12, padding: "7px 16px",
-          borderBottom: "1px solid rgba(255,255,255,0.04)",
-          background: "rgba(0,0,0,0.1)",
-        }}>
-          {["#", "Problem", "Status", "Rating", ""].map((h, i) => (
-            <span key={i} style={{
-              fontSize: 10, fontWeight: 600,
-              color: "var(--text-secondary)",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
-              textAlign: i === 3 ? "right" : "left",
-            }}>
-              {h}
+            {/* Color dot instead of wide bar */}
+            <div
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: col,
+                flexShrink: 0,
+                opacity: 0.8,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 9.5,
+                fontFamily: D.mono,
+                color: col,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {c.name.length > 14 ? c.name.slice(0, 13) + "…" : c.name}
             </span>
-          ))}
-        </div>
-
-        {/* Rows */}
-        <div style={{ maxHeight: 480, overflowY: "auto" }}>
-          <AnimatePresence mode="popLayout">
-            {filteredProblems.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{
-                  padding: "40px 16px",
-                  textAlign: "center",
-                  color: "var(--text-secondary)",
-                  fontSize: 13,
-                }}
-              >
-                No {statusFilter !== "all" ? statusFilter : ""} problems
-                {search ? ` matching "${search}"` : ""}
-              </motion.div>
-            ) : (
-              filteredProblems.map(p => (
-                <ProblemRow
-                  key={p.id}
-                  problem={p}
-                  contestName={contestNameMap.get(p.contest_id) ?? p.contest_id}
-                />
-              ))
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Footer */}
-        {filteredProblems.length > 0 && (
-          <div style={{
-            padding: "8px 16px",
-            borderTop: "1px solid rgba(255,255,255,0.04)",
-            display: "flex", justifyContent: "flex-end",
-          }}>
-            <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-              {filteredProblems.length} problem{filteredProblems.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-        )}
-      </motion.div>
+          </motion.div>
+        );
+      })}
+      {(() => {
+        const totalContests = new Set(g.problems.map((p) => p.contest_id)).size;
+        if (totalContests <= 6) return null;
+        return (
+          <span
+            style={{
+              fontSize: 9.5,
+              color: D.muted,
+              fontFamily: D.mono,
+              padding: "3px 6px",
+              alignSelf: "center",
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${D.border}`,
+              borderRadius: 5,
+            }}
+          >
+            +{totalContests - 6}
+          </span>
+        );
+      })()}
     </div>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUP CARD — main interactive tile
+// ─────────────────────────────────────────────────────────────────────────────
 
+function GroupCard({ g, index }: { g: GroupWithProblems; index: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(cardRef, { once: true, margin: "-40px" });
+  const [glow, setGlow] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
 
+  const nextProblem = useMemo(() => getNextProblem(g), [g]);
+  const color = pctColor(g.progress_pct);
+  const isComplete = g.progress_pct === 100;
+
+  // Mouse-tracking radial glow (MagicCard effect)
+  const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setGlow({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
+  }, []);
+
+  const totalContests = useMemo(
+    () => new Set(g.problems.map((p) => p.contest_id)).size,
+    [g.problems],
+  );
+  const completedContests = useMemo(() => {
+    const map = new Map<string, { solved: number; total: number }>();
+    for (const p of g.problems) {
+      const c = map.get(p.contest_id) ?? { solved: 0, total: 0 };
+      map.set(p.contest_id, {
+        solved: c.solved + (p.cf_status === "solved" ? 1 : 0),
+        total: c.total + 1,
+      });
+    }
+    return Array.from(map.values()).filter(
+      (c) => c.solved === c.total && c.total > 0,
+    ).length;
+  }, [g.problems]);
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+      animate={inView ? { opacity: 1, y: 0, filter: "blur(0px)" } : {}}
+      transition={{ duration: 0.48, delay: index * 0.07, ease: EASE }}
+      onMouseMove={onMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: "relative",
+        background: D.surface,
+        border: `1px solid ${hovered ? "rgba(0,212,170,0.18)" : D.border}`,
+        borderRadius: 16,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+        transform: hovered ? "translateY(-3px)" : "translateY(0)",
+        boxShadow: hovered
+          ? "0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,212,170,0.08)"
+          : "0 4px 16px rgba(0,0,0,0.25)",
+        cursor: "default",
+      }}
+    >
+      {/* Mouse-following radial glow */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(circle at ${glow.x}% ${glow.y}%, rgba(0,212,170,${hovered ? 0.065 : 0}) 0%, transparent 65%)`,
+          transition: "background 0.1s",
+          pointerEvents: "none",
+          borderRadius: 16,
+          zIndex: 0,
+        }}
+      />
+
+      {/* Top accent line — color by progress */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={inView ? { scaleX: 1 } : {}}
+        transition={{ duration: 0.9, delay: index * 0.07 + 0.25, ease: EASE }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          background: `linear-gradient(90deg, ${color}, transparent)`,
+          transformOrigin: "left",
+          opacity: 0.7,
+          zIndex: 1,
+        }}
+      />
+
+      {/* Content */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "18px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          flex: 1,
+        }}
+      >
+        {/* ── HEADER ───────────────────────────────────────────────────── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 14.5,
+                fontWeight: 700,
+                color: D.primary,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.3,
+                fontFamily: D.sans,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {g.group_name}
+            </h3>
+
+            {/* Sync status */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                marginTop: 4,
+              }}
+            >
+              <motion.div
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2.4,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: syncColor(g.last_synced),
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{ fontSize: 10, color: D.muted, fontFamily: D.mono }}
+              >
+                {g.last_synced
+                  ? `synced ${formatTimeAgo(g.last_synced)}`
+                  : "never synced"}
+              </span>
+            </div>
+          </div>
+
+          {/* CF link + complete badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flexShrink: 0,
+            }}
+          >
+            {isComplete && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 22,
+                  delay: 0.5,
+                }}
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: D.green,
+                  background: "rgba(74,222,128,0.1)",
+                  border: "1px solid rgba(74,222,128,0.25)",
+                  borderRadius: 5,
+                  padding: "2px 6px",
+                  letterSpacing: "0.06em",
+                  fontFamily: D.mono,
+                }}
+              >
+                COMPLETE
+              </motion.span>
+            )}
+            {g.group_url && (
+              <a
+                href={g.group_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 26,
+                  height: 26,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 7,
+                  color: hovered ? D.teal : D.muted,
+                  transition: "color 0.15s, border-color 0.15s",
+                  textDecoration: "none",
+                }}
+                onClick={(e) => e.stopPropagation()}
+                title="Open on Codeforces"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                >
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* ── PROGRESS ROW ─────────────────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {/* Arc ring */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <ProgressRing pct={g.progress_pct} size={72} />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: color,
+                  fontFamily: D.mono,
+                  letterSpacing: "-0.04em",
+                  lineHeight: 1,
+                }}
+              >
+                <Counter value={Math.round(g.progress_pct)} />%
+              </span>
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "6px 16px",
+              flex: 1,
+            }}
+          >
+            {[
+              { label: "Solved", value: g.solved_count, color: D.teal },
+              { label: "Todo", value: g.todo_count, color: D.secondary },
+              {
+                label: "Tried",
+                value: g.attempted_count,
+                color: g.attempted_count > 0 ? D.amber : D.muted,
+              },
+              { label: "Total", value: g.total_problems, color: D.muted },
+            ].map((s) => (
+              <div key={s.label}>
+                <div
+                  style={{
+                    fontSize: 15.5,
+                    fontWeight: 800,
+                    color: s.color,
+                    fontFamily: D.mono,
+                    letterSpacing: "-0.04em",
+                    lineHeight: 1,
+                  }}
+                >
+                  <Counter value={s.value} />
+                </div>
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: D.muted,
+                    fontFamily: D.sans,
+                    marginTop: 1,
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contests completed chip */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              fontSize: 9.5,
+              fontFamily: D.mono,
+              color: D.muted,
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${D.border}`,
+              borderRadius: 5,
+              padding: "2px 8px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {completedContests}/{totalContests} contests done
+          </div>
+
+          {g.attempted_count > 0 && (
+            <div
+              style={{
+                fontSize: 9.5,
+                fontFamily: D.mono,
+                color: D.amber,
+                background: "rgba(251,191,36,0.08)",
+                border: "1px solid rgba(251,191,36,0.18)",
+                borderRadius: 5,
+                padding: "2px 8px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {g.attempted_count} stuck
+            </div>
+          )}
+        </div>
+
+        {/* ── CONTEST PILLS ────────────────────────────────────────────── */}
+        <div>
+          <div
+            style={{
+              fontSize: 8.5,
+              fontWeight: 700,
+              color: D.muted,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              fontFamily: D.mono,
+              marginBottom: 6,
+            }}
+          >
+            Contests
+          </div>
+          <ContestPills g={g} />
+        </div>
+
+        {/* ── ACTIVITY STRIP ───────────────────────────────────────────── */}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 5,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 8.5,
+                fontWeight: 700,
+                color: D.muted,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontFamily: D.mono,
+              }}
+            >
+              30-day activity
+            </span>
+            <span style={{ fontSize: 8.5, color: D.muted, fontFamily: D.mono }}>
+              {g.solved_count} solved total
+            </span>
+          </div>
+          <ActivityStrip problems={g.problems} />
+        </div>
+
+        {/* ── NEXT PROBLEM ─────────────────────────────────────────────── */}
+        {nextProblem && !isComplete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ delay: index * 0.07 + 0.45 }}
+            style={{
+              padding: "8px 10px",
+              background: "rgba(0,212,170,0.04)",
+              border: "1px solid rgba(0,212,170,0.1)",
+              borderRadius: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 8.5,
+                fontWeight: 700,
+                color: "rgba(0,212,170,0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontFamily: D.mono,
+                marginBottom: 4,
+              }}
+            >
+              ⚡ Next up
+            </div>
+            <a
+              href={nextProblem.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: D.primary,
+                textDecoration: "none",
+                display: "block",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span style={{ color: D.teal, fontFamily: D.mono }}>
+                {nextProblem.index}.
+              </span>{" "}
+              {nextProblem.name}
+            </a>
+            <span
+              style={{
+                fontSize: 9.5,
+                color: D.muted,
+                fontFamily: D.mono,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                display: "block",
+                marginTop: 2,
+              }}
+            >
+              {nextProblem.contestName}
+            </span>
+          </motion.div>
+        )}
+
+        {isComplete && (
+          <div
+            style={{
+              padding: "8px 10px",
+              background: "rgba(74,222,128,0.04)",
+              border: "1px solid rgba(74,222,128,0.1)",
+              borderRadius: 8,
+              textAlign: "center",
+            }}
+          >
+            <span style={{ fontSize: 11, color: D.green, fontFamily: D.mono }}>
+              🎯 All problems solved
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── FOOTER / CTA ──────────────────────────────────────────────── */}
+      <Link
+        href={`/dashboard2/groups/${g.group_code}`}
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "11px 20px",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          background: hovered ? "rgba(0,212,170,0.035)" : "transparent",
+          textDecoration: "none",
+          transition: "background 0.15s",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: hovered ? D.teal : D.secondary,
+            fontFamily: D.sans,
+            transition: "color 0.15s",
+          }}
+        >
+          View Details
+        </span>
+        <motion.span
+          animate={{ x: hovered ? 4 : 0 }}
+          transition={{ duration: 0.18, ease: EASE }}
+          style={{
+            color: hovered ? D.teal : D.muted,
+            display: "flex",
+            alignItems: "center",
+            transition: "color 0.15s",
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </motion.span>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD GROUP CARD — dashed placeholder at end of grid
+// ─────────────────────────────────────────────────────────────────────────────
+
+function AddGroupCard() {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.4, duration: 0.5 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        border: `1px dashed ${hovered ? "rgba(0,212,170,0.3)" : "rgba(255,255,255,0.09)"}`,
+        borderRadius: 16,
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        minHeight: 120,
+        alignSelf: "start",
+        background: hovered ? "rgba(0,212,170,0.02)" : "transparent",
+        transition: "border-color 0.2s, background 0.2s",
+        cursor: "default",
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          background: hovered
+            ? "rgba(0,212,170,0.1)"
+            : "rgba(255,255,255,0.04)",
+          border: `1px solid ${hovered ? "rgba(0,212,170,0.25)" : "rgba(255,255,255,0.08)"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.2s, border-color 0.2s",
+        }}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={hovered ? D.teal : D.muted}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: hovered ? D.secondary : D.muted,
+            fontFamily: D.sans,
+            transition: "color 0.15s",
+          }}
+        >
+          Join another group
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            color: D.muted,
+            fontFamily: D.mono,
+            marginTop: 3,
+          }}
+        >
+          sync from the extension
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  const steps = [
+    "Install the Memoize extension",
+    "Open any CF Group you're in",
+    "Click Sync — it appears here",
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE }}
+      style={{
+        maxWidth: 420,
+        margin: "40px auto",
+        background: D.surface,
+        border: `1px solid ${D.border}`,
+        borderRadius: 16,
+        padding: "32px 28px",
+        fontFamily: D.mono,
+      }}
+    >
+      <div
+        style={{ fontSize: 11, color: "rgba(0,212,170,0.5)", marginBottom: 12 }}
+      >
+        <span style={{ color: D.teal }}>$</span> waiting for your first group
+        <motion.span
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ repeat: Infinity, duration: 1 }}
+          style={{ color: D.teal, marginLeft: 2 }}
+        >
+          ▌
+        </motion.span>
+      </div>
+
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: D.primary,
+          marginBottom: 16,
+          fontFamily: D.sans,
+        }}
+      >
+        How to add a CF Group
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {steps.map((s, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 + i * 0.1, ease: EASE }}
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "rgba(0,212,170,0.1)",
+                border: "1px solid rgba(0,212,170,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 9, color: D.teal, fontWeight: 700 }}>
+                {i + 1}
+              </span>
+            </div>
+            <span
+              style={{ fontSize: 11.5, color: D.secondary, fontFamily: D.sans }}
+            >
+              {s}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL COMMAND BAR
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CommandBar({
+  groups,
+  lastSynced,
+  cfAuth,
+}: {
+  groups: GroupWithProblems[];
+  lastSynced: string | null;
+  cfAuth: UserCfAuth | null;
+}) {
+  const totals = useMemo(() => {
+    const solved = groups.reduce((s, g) => s + g.solved_count, 0);
+    const total = groups.reduce((s, g) => s + g.total_problems, 0);
+    const tried = groups.reduce((s, g) => s + g.attempted_count, 0);
+    const overall = total > 0 ? Math.round((solved / total) * 100) : 0;
+    return { solved, total, tried, overall };
+  }, [groups]);
+
+  const scColor = syncColor(lastSynced);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: EASE }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 12,
+        padding: "12px 18px",
+        background: D.surface,
+        border: `1px solid ${D.border}`,
+        borderRadius: 12,
+        marginBottom: 16,
+      }}
+    >
+      {/* Stats */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          flexWrap: "wrap",
+        }}
+      >
+        {[
+          { label: "groups", value: groups.length, color: D.secondary },
+          { label: "solved", value: totals.solved, color: D.teal },
+          {
+            label: "remaining",
+            value: totals.total - totals.solved,
+            color: D.muted,
+          },
+          {
+            label: "stuck",
+            value: totals.tried,
+            color: totals.tried > 0 ? D.amber : D.muted,
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
+            style={{ display: "flex", alignItems: "baseline", gap: 4 }}
+          >
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                fontFamily: D.mono,
+                color: s.color,
+                letterSpacing: "-0.04em",
+                lineHeight: 1,
+              }}
+            >
+              <Counter value={s.value} />
+            </span>
+            <span style={{ fontSize: 9, color: D.muted, fontFamily: D.sans }}>
+              {s.label}
+            </span>
+          </div>
+        ))}
+
+        {/* Overall % — inline text only, no ring (ring lives in the card) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 4,
+            paddingLeft: 8,
+            borderLeft: `1px solid rgba(255,255,255,0.07)`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: 800,
+              fontFamily: D.mono,
+              color: pctColor(totals.overall),
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+            }}
+          >
+            <Counter value={totals.overall} />%
+          </span>
+          <span style={{ fontSize: 9, color: D.muted, fontFamily: D.sans }}>
+            overall
+          </span>
+        </div>
+      </div>
+
+      {/* Right: sync indicator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <motion.div
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: scColor,
+              flexShrink: 0,
+              boxShadow: `0 0 5px ${scColor}`,
+            }}
+          />
+          <span style={{ fontSize: 10.5, color: D.muted, fontFamily: D.mono }}>
+            {lastSynced
+              ? `Last sync: ${formatTimeAgo(lastSynced)}`
+              : "Never synced"}
+          </span>
+        </div>
+
+        {cfAuth?.cf_handle && (
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: D.mono,
+              color: D.teal,
+              background: "rgba(0,212,170,0.08)",
+              border: "1px solid rgba(0,212,170,0.15)",
+              borderRadius: 5,
+              padding: "2px 8px",
+            }}
+          >
+            @{cfAuth.cf_handle}
+          </div>
+        )}
+
+        <SyncButton />
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function GroupsClient({ groups, cfAuth, lastSynced, userId }: Props) {
+  return (
+    <div style={{ fontFamily: D.sans }}>
+      {/* Global command bar */}
+      {groups.length > 0 && (
+        <CommandBar groups={groups} lastSynced={lastSynced} cfAuth={cfAuth} />
+      )}
+
+      {/* Grid */}
+      {groups.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          {groups.map((g, i) => (
+            <GroupCard key={g.id} g={g} index={i} />
+          ))}
+          <AddGroupCard />
+        </div>
+      )}
+    </div>
+  );
+}

@@ -4,12 +4,13 @@ import {
   getCfGroupProblems,
   getUserCfAuth,
 } from "@/lib/cf-queries";
-import { GroupDetailClient } from "@/components/new-responsive-dashboard/cf/GroupsClient";
+// import { GroupDetailClient } from "@/components/new-responsive-dashboard/cf/GroupsClient";
 
-// import { GroupDetailClientV2 } from "@/components/new-responsive-dashboard/cf/GroupDetailClientV2";
+import { GroupDetailClientV2 } from "@/components/new-responsive-dashboard/cf/GroupDetailClientV2";
 import { Topbar } from "@/components/new-responsive-dashboard/overview/Topbar";
 import { notFound } from "next/navigation";
 import type { PeerData } from "@/components/new-responsive-dashboard/cf/GroupDetailClientV2";
+// import { GroupsClient } from "@/components/new-design/dashboard/cf/GroupsClient";
 
 interface PageProps {
   params: Promise<{ groupCode: string }>;
@@ -86,19 +87,19 @@ export default async function GroupDetailPage({
         subtitle={`${group.solved_count}/${group.total_problems} solved · ${group.progress_pct}% complete`}
       />
       <div className="dashboard-content">
-        <GroupDetailClient
+        {/* <GroupsClient
           group={group}
           problems={problems}
           selectedContestId={contest ?? null}
           
-        />
+        /> */}
 
-        {/* <GroupDetailClientV2
+        <GroupDetailClientV2
           group={group}
           problems={problems}
           selectedContestId={contest ?? null}
           peerData={peerData}
-        /> */}
+        />
 
         
       </div>
