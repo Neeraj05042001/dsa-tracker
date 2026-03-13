@@ -26,11 +26,16 @@ interface SidebarProps {
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { href: "/dashboard",           label: "Overview",  Icon: IconHome    },
-  { href: "/dashboard/problems",  label: "Problems",  Icon: IconList    },
-  { href: "/dashboard/revision",  label: "Revision",  Icon: IconRefresh, badge: true },
-  { href: "/dashboard/analytics", label: "Analytics", Icon: IconChart   },
-  { href: "/dashboard/groups",    label: "CF Groups", Icon: IconGroups  },
+  { href: "/dashboard", label: "Overview", Icon: IconHome },
+  { href: "/dashboard/problems", label: "Problems", Icon: IconList },
+  {
+    href: "/dashboard/revision",
+    label: "Revision",
+    Icon: IconRefresh,
+    badge: true,
+  },
+  { href: "/dashboard/analytics", label: "Analytics", Icon: IconChart },
+  { href: "/dashboard/groups", label: "CF Groups", Icon: IconGroups },
 ];
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -503,15 +508,13 @@ export function Sidebar({
     return () => document.removeEventListener("mousedown", onDown);
   }, [popoverOpen]);
 
-  // Close popover + drawer on route change — skip on first mount
+  const prevPathnameRef = useRef(pathname);
+
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
+    if (prevPathnameRef.current === pathname) return;
+    prevPathnameRef.current = pathname;
     setPopoverOpen(false);
     if (isMobileDrawer && onMobileClose) onMobileClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (
