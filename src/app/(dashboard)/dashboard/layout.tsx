@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+// import DashboardShell from "@/components/layout/DashboardShell";
 
 export default async function DashboardLayout({
   children,
@@ -24,16 +25,8 @@ export default async function DashboardLayout({
     : undefined;
 
   return (
-    <div className="dashboard-shell">
-      {/* Sidebar — fixed left */}
-      <Sidebar
-        revisionDueCount={0}
-        user={sidebarUser}
-        
-      />
-
-      {/* Main content area */}
-      <main className="dashboard-main">{children}</main>
-    </div>
+    <DashboardShell user={sidebarUser} revisionDueCount={0}>
+      {children}
+    </DashboardShell>
   );
 }

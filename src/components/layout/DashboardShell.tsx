@@ -115,7 +115,7 @@ function MobileDrawer({
         if (e.target === el) onClose();
       };
       el?.addEventListener("click", handler);
-    }, 0);
+    }, 350);
 
     return () => {
       clearTimeout(timer);

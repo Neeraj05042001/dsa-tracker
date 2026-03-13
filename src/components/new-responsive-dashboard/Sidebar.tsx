@@ -26,11 +26,11 @@ interface SidebarProps {
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { href: "/dashboard2",           label: "Overview",  Icon: IconHome    },
-  { href: "/dashboard2/problems",  label: "Problems",  Icon: IconList    },
-  { href: "/dashboard2/revision",  label: "Revision",  Icon: IconRefresh, badge: true },
-  { href: "/dashboard2/analytics", label: "Analytics", Icon: IconChart   },
-  { href: "/dashboard2/groups",    label: "CF Groups", Icon: IconGroups  },
+  { href: "/dashboard",           label: "Overview",  Icon: IconHome    },
+  { href: "/dashboard/problems",  label: "Problems",  Icon: IconList    },
+  { href: "/dashboard/revision",  label: "Revision",  Icon: IconRefresh, badge: true },
+  { href: "/dashboard/analytics", label: "Analytics", Icon: IconChart   },
+  { href: "/dashboard/groups",    label: "CF Groups", Icon: IconGroups  },
 ];
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -221,15 +221,24 @@ export function Sidebar({
   }, [popoverOpen]);
 
   // Close popover + drawer on route change — skip on first mount
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-    setPopoverOpen(false);
-    if (isMobileDrawer && onMobileClose) onMobileClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  // useEffect(() => {
+  //   if (!mountedRef.current) {
+  //     mountedRef.current = true;
+  //     return;
+  //   }
+  //   setPopoverOpen(false);
+  //   if (isMobileDrawer && onMobileClose) onMobileClose();
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [pathname]);
+
+  const prevPathnameRef = useRef(pathname);
+
+useEffect(() => {
+  if (prevPathnameRef.current === pathname) return;
+  prevPathnameRef.current = pathname;
+  setPopoverOpen(false);
+  if (isMobileDrawer && onMobileClose) onMobileClose();
+}, [pathname]);
 
   return (
     <>

@@ -1,5 +1,6 @@
-import { ProblemsClient } from "@/components/problems/ProblemsClient";
+// import { ProblemsClient } from "@/components/problems/ProblemsClient";
 import { getDashboardStats, getProblems } from "@/lib/queries";
+import { ProblemsClient } from "@/components/new-responsive-dashboard/problems/ProblemClient";
 
 export default async function ProblemsPage() {
   const [{ problems }, stats] = await Promise.all([

@@ -1,18 +1,30 @@
-import { Topbar } from "@/components/layout/Topbar";
-import { StatCard } from "@/components/stats/StatCard";
+// import { Topbar } from "@/components/layout/Topbar";
+// import { StatCard } from "@/components/stats/StatCard";
+// import { getDashboardStats } from "@/lib/queries";
+// import { DifficultyDonut } from "@/components/charts/DifficultyDonut";
+// import { HorizontalBars } from "@/components/charts/HorizontalBars";
+// import { SolveHelpBreakdown } from "@/components/charts/SolveHelpBreakdown";
+// import { SolvedOverTime } from "@/components/charts/SolvedOverTime";
+// import { ReadinessHero } from "@/components/charts/ReadinessHero";
+// import { InterviewMode } from "@/components/charts/InterviewMode";
+// import { FocusAreas } from "@/components/charts/FocusAreas";
+// import { PlatformSplit } from "@/components/charts/PlatformSplit";
+// import { PatternCoverageGrid } from "@/components/charts/PatternCoverageGrid";
+// import { AnalyticsPageClient } from "@/components/charts/AnalyticsPageClient";
+
+import { Topbar } from "@/components/new-responsive-dashboard/overview/Topbar";
+import { StatCard } from "@/components/new-responsive-dashboard/analytics/charts/StatCard";
 import { getDashboardStats } from "@/lib/queries";
-import { DifficultyDonut } from "@/components/charts/DifficultyDonut";
-import { HorizontalBars } from "@/components/charts/HorizontalBars";
-import { SolveHelpBreakdown } from "@/components/charts/SolveHelpBreakdown";
-import { SolvedOverTime } from "@/components/charts/SolvedOverTime";
-import { ReadinessHero } from "@/components/charts/ReadinessHero";
-import { InterviewMode } from "@/components/charts/InterviewMode";
-import { FocusAreas } from "@/components/charts/FocusAreas";
-import { PlatformSplit } from "@/components/charts/PlatformSplit";
-import { PatternCoverageGrid } from "@/components/charts/PatternCoverageGrid";
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
+import { DifficultyDonut } from "@/components/new-responsive-dashboard/analytics/charts/DifficultyDonut";
+import { HorizontalBars } from "@/components/new-responsive-dashboard/analytics/charts/HorizontalBars";
+import { SolveHelpBreakdown } from "@/components/new-responsive-dashboard/analytics/charts/SolveHelpBreakdown";
+import { SolvedOverTime } from "@/components/new-responsive-dashboard/analytics/charts/SolvedOverTime";
+import { ReadinessHero } from "@/components/new-responsive-dashboard/analytics/charts/ReadinessHero";
+import { InterviewMode } from "@/components/new-responsive-dashboard/analytics/charts/InterviewMode";
+import { FocusAreas } from "@/components/new-responsive-dashboard/analytics/charts/FocusAreas";
+import { PlatformSplit } from "@/components/new-responsive-dashboard/analytics/charts/PlatformSplit";
+import { PatternCoverageGrid } from "@/components/new-responsive-dashboard/analytics/charts/PatternCoverageGrid";
+import { AnalyticsPageClient } from "@/components/new-responsive-dashboard/analytics/AnalyticsClient";
 function IcoCode() {
   return (
     <svg
@@ -76,30 +88,21 @@ function IcoFlame() {
   );
 }
 
-// ─── Chart card wrapper ───────────────────────────────────────────────────────
-
 function ChartCard({
   title,
   subtitle,
-  delay,
   children,
   accent,
 }: {
   title: string;
   subtitle?: string;
-  delay: number;
   children: React.ReactNode;
   accent?: string;
 }) {
   return (
     <div
-      className="card animate-fade-in"
-      style={{
-        padding: "22px 24px",
-        animationDelay: `${delay}ms`,
-        position: "relative",
-        overflow: "hidden",
-      }}
+      className="card"
+      style={{ padding: "22px 24px", position: "relative", overflow: "hidden" }}
     >
       {accent && (
         <div
@@ -136,8 +139,6 @@ function ChartCard({
   );
 }
 
-// ─── Readiness score helper (mirrors ReadinessHero logic) ─────────────────────
-
 function computeReadinessScore(
   stats: Awaited<ReturnType<typeof getDashboardStats>>,
 ): number {
@@ -168,205 +169,192 @@ function computeReadinessScore(
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default async function AnalyticsPage() {
   const stats = await getDashboardStats();
-
   const readinessScore = computeReadinessScore(stats);
   const confidencePct = Math.round(stats.avg_confidence * 100);
   const revisionHealth =
     stats.total === 0
       ? 100
       : Math.round((1 - stats.needs_revision_count / stats.total) * 100);
-
-  // Only show platforms the user has actually used
   const activePlatforms = stats.by_platform.filter((p) => p.total > 0);
   const showPlatformSplit = activePlatforms.length > 0;
-  // Use 3-col if multiple platforms, 2-col if only one
   const bottomRowCols =
     showPlatformSplit && activePlatforms.length > 1 ? "1fr 1fr 1fr" : "1fr 1fr";
+
+  // Last 7 days activity for sparklines
+  const last7 = stats.daily_activity
+    .slice(-7)
+    .map((d: { count: number }) => d.count);
 
   return (
     <>
       <Topbar title="Analytics" subtitle="Your full performance breakdown" />
-
       <div className="dashboard-content">
-        {/* ── 1. Readiness hero ── */}
-        <div style={{ marginBottom: 16 }}>
-          <ReadinessHero stats={stats} delay={0} />
-        </div>
+        <AnalyticsPageClient>
+          {/* ── 1. Readiness hero ── */}
+          <div data-section="0" style={{ marginBottom: 16 }}>
+            <ReadinessHero stats={stats} delay={0} />
+          </div>
 
-        {/* ── 2. Interview Mode — opt-in ── */}
-        <div style={{ marginBottom: 16 }}>
-          <InterviewMode stats={stats} readinessScore={readinessScore} />
-        </div>
+          {/* ── 2. Interview Mode ── */}
+          <div data-section="1" style={{ marginBottom: 16 }}>
+            <InterviewMode stats={stats} readinessScore={readinessScore} />
+          </div>
 
-        {/* ── 3. Focus Areas — actionable ── */}
-        <div style={{ marginBottom: 20 }}>
-          <FocusAreas
-            patterns={stats.by_pattern}
-            tags={stats.by_tag}
-            delay={200}
-          />
-        </div>
+          {/* ── 3. Focus Areas ── */}
+          <div data-section="2" style={{ marginBottom: 20 }}>
+            <FocusAreas
+              patterns={stats.by_pattern}
+              tags={stats.by_tag}
+              delay={200}
+            />
+          </div>
 
-        {/* ── 4. Stat strip ── */}
-        <div
-          className="stagger"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 14,
-            marginBottom: 16,
-          }}
-        >
-          <StatCard
-            label="Total Solved"
-            value={stats.solved}
-            icon={<IcoCode />}
-            delay={240}
-            sublabel={`${stats.total} tracked total`}
-          />
-          <StatCard
-            label="Avg Confidence"
-            value={confidencePct}
-            icon={<IcoConf />}
-            accent={
-              stats.avg_confidence >= 0.7
-                ? "var(--easy)"
-                : stats.avg_confidence >= 0.4
-                  ? "var(--medium)"
-                  : "var(--hard)"
-            }
-            suffix="%"
-            delay={300}
-            sublabel={
-              stats.avg_confidence === 0
-                ? "No data yet"
-                : stats.avg_confidence >= 0.7
-                  ? "Strong recall"
+          {/* ── 4. Stat strip ── */}
+          <div
+            data-section="3"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 14,
+              marginBottom: 16,
+            }}
+          >
+            <StatCard
+              label="Total Solved"
+              value={stats.solved}
+              icon={<IcoCode />}
+              delay={0}
+              sublabel={`${stats.total} tracked total`}
+              sparkline={last7}
+            />
+            <StatCard
+              label="Avg Confidence"
+              value={confidencePct}
+              icon={<IcoConf />}
+              accent={
+                stats.avg_confidence >= 0.7
+                  ? "var(--easy)"
                   : stats.avg_confidence >= 0.4
-                    ? "Building up"
-                    : "Keep practising"
-            }
-          />
-          <StatCard
-            label="Revision Health"
-            value={revisionHealth}
-            icon={<IcoRevision />}
-            accent={
-              revisionHealth >= 80
-                ? "var(--easy)"
-                : revisionHealth >= 50
-                  ? "var(--medium)"
-                  : "var(--hard)"
-            }
-            suffix="%"
-            delay={360}
-            sublabel={`${stats.needs_revision_count} flagged for review`}
-          />
-          <StatCard
-            label="Current Streak"
-            value={stats.current_streak}
-            icon={<IcoFlame />}
-            accent="#f97316"
-            suffix=" days"
-            delay={420}
-            sublabel={`Best: ${stats.longest_streak} days`}
-            dimWhenZero
-          />
-        </div>
+                    ? "var(--medium)"
+                    : "var(--hard)"
+              }
+              suffix="%"
+              delay={60}
+              sublabel={
+                stats.avg_confidence === 0
+                  ? "No data yet"
+                  : stats.avg_confidence >= 0.7
+                    ? "Strong recall"
+                    : stats.avg_confidence >= 0.4
+                      ? "Building up"
+                      : "Keep practising"
+              }
+            />
+            <StatCard
+              label="Revision Health"
+              value={revisionHealth}
+              icon={<IcoRevision />}
+              accent={
+                revisionHealth >= 80
+                  ? "var(--easy)"
+                  : revisionHealth >= 50
+                    ? "var(--medium)"
+                    : "var(--hard)"
+              }
+              suffix="%"
+              delay={120}
+              sublabel={`${stats.needs_revision_count} flagged for review`}
+            />
+            <StatCard
+              label="Current Streak"
+              value={stats.current_streak}
+              icon={<IcoFlame />}
+              accent="#f97316"
+              suffix=" days"
+              delay={180}
+              sublabel={`Best: ${stats.longest_streak} days`}
+              dimWhenZero
+              sparkline={last7}
+            />
+          </div>
 
-        {/* ── 5. Solved over time — full width, activity history ── */}
-        <div style={{ marginBottom: 16 }}>
-          <ChartCard
-            title="Solved — Last 30 Days"
-            delay={460}
-            accent="var(--accent)"
-          >
-            <SolvedOverTime data={stats.daily_activity} delay={460} />
-          </ChartCard>
-        </div>
-
-        {/* ── 6. Difficulty | Solve Help | Platform (active only) ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: bottomRowCols,
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
-          <ChartCard
-            title="Difficulty Breakdown"
-            delay={500}
-            accent="var(--accent)"
-          >
-            <DifficultyDonut data={stats.by_difficulty} delay={500} />
-          </ChartCard>
-
-          <ChartCard title="How You Solved" delay={550} accent="var(--easy)">
-            <SolveHelpBreakdown data={stats.by_solve_help} delay={550} />
-          </ChartCard>
-
-          {showPlatformSplit && activePlatforms.length > 1 && (
-            <ChartCard title="Platform Split" delay={600}>
-              <PlatformSplit platforms={activePlatforms} delay={600} />
+          {/* ── 5. Solved over time ── */}
+          <div data-section="4" style={{ marginBottom: 16 }}>
+            <ChartCard title="Solved — Last 30 Days" accent="var(--accent)">
+              <SolvedOverTime data={stats.daily_activity} delay={460} />
             </ChartCard>
-          )}
-        </div>
+          </div>
 
-        {/* ── 7. Tag Strength + Pattern Coverage ── */}
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
-        >
-          {/* Tags — bars with fade+expand (organic, user-defined) */}
-          <ChartCard
-            title="Tag Strength"
-            subtitle="Bar length = volume · Color = avg confidence"
-            delay={640}
-            accent="var(--accent)"
+          {/* ── 6. Difficulty | Solve Help | Platform ── */}
+          <div
+            data-section="5"
+            style={{
+              display: "grid",
+              gridTemplateColumns: bottomRowCols,
+              gap: 14,
+              marginBottom: 14,
+            }}
           >
-            {stats.by_tag.length === 0 ? (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  fontStyle: "italic",
-                  margin: 0,
-                }}
-              >
-                No tags tracked yet.
-              </p>
-            ) : (
-              <HorizontalBars
-                items={stats.by_tag.map((t) => ({
-                  label: t.tag,
-                  count: t.count,
-                  avgConfidence: t.avg_confidence,
-                }))}
-                delay={640}
-                colorMode="confidence"
-              />
+            <ChartCard title="Difficulty Breakdown" accent="var(--accent)">
+              <DifficultyDonut data={stats.by_difficulty} delay={500} />
+            </ChartCard>
+            <ChartCard title="How You Solved" accent="var(--easy)">
+              <SolveHelpBreakdown data={stats.by_solve_help} delay={550} />
+            </ChartCard>
+            {showPlatformSplit && activePlatforms.length > 1 && (
+              <ChartCard title="Platform Split">
+                <PlatformSplit platforms={activePlatforms} delay={600} />
+              </ChartCard>
             )}
-          </ChartCard>
+          </div>
 
-          {/* Patterns — coverage grid (fixed set, shows gaps) */}
-          <ChartCard
-            title="Pattern Coverage"
-            subtitle="All patterns · Grey = not yet attempted"
-            delay={680}
-            accent="var(--medium)"
+          {/* ── 7. Tag Strength + Pattern Coverage ── */}
+          <div
+            data-section="6"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
           >
-            <PatternCoverageGrid patterns={stats.by_pattern} delay={680} />
-          </ChartCard>
-        </div>
+            <ChartCard
+              title="Tag Strength"
+              subtitle="Bar length = volume · Color = avg confidence"
+              accent="var(--accent)"
+            >
+              {stats.by_tag.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--text-muted)",
+                    fontStyle: "italic",
+                    margin: 0,
+                  }}
+                >
+                  No tags tracked yet.
+                </p>
+              ) : (
+                <HorizontalBars
+                  items={stats.by_tag.map((t) => ({
+                    label: t.tag,
+                    count: t.count,
+                    avgConfidence: t.avg_confidence,
+                  }))}
+                  delay={640}
+                  colorMode="confidence"
+                />
+              )}
+            </ChartCard>
+            <ChartCard
+              title="Pattern Coverage"
+              subtitle="All patterns · Grey = not yet attempted"
+              accent="var(--medium)"
+            >
+              <PatternCoverageGrid patterns={stats.by_pattern} delay={680} />
+            </ChartCard>
+          </div>
+        </AnalyticsPageClient>
       </div>
     </>
   );
 }
 
-export const metadata = {
-  title: "Analytics — DSA Tracker",
-};
+export const metadata = { title: "Analytics — DSA Tracker" };

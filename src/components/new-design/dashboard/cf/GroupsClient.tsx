@@ -215,11 +215,17 @@ function GroupCard({
   const [problems,  setProblems]  = useState(group.problems);
   const [filter,    setFilter]    = useState<"all" | "todo" | "solved" | "attempted">("all");
 
-  const pct        = group.progress_pct ?? 0;
-  const total      = group.total_problems ?? 0;
-  const solved     = group.solved_count ?? 0;
-  const attempted  = group.attempted_count ?? 0;
-  const todo       = group.todo_count ?? 0;
+  // const pct        = group.progress_pct ?? 0;
+  // const total      = group.total_problems ?? 0;
+  // const solved     = group.solved_count ?? 0;
+  // const attempted  = group.attempted_count ?? 0;
+  // const todo       = group.todo_count ?? 0;
+
+  const total     = problems.length;
+const solved    = problems.filter(p => p.cf_status === 'solved').length;
+const attempted = problems.filter(p => p.cf_status === 'attempted').length;
+const todo      = problems.filter(p => p.cf_status === 'todo').length;
+const pct       = total > 0 ? Math.round((solved / total) * 100) : 0;
 
   const filtered = filter === "all"
     ? problems
@@ -557,6 +563,49 @@ export function GroupsClient({ groups, cfAuth, lastSynced, userId }: GroupsClien
       setSyncing(false);
     }
   }
+
+//   async function handleSync() {
+//   setSyncing(true);
+//   setSyncMsg(null);
+//   setSyncError(false);
+
+//   try {
+//     // Step 1: Ask extension to scrape + push to /api/cf/push-groups
+//     const result = await new Promise<any>((resolve, reject) => {
+//       const timeout = setTimeout(() => {
+//         reject(new Error("Extension timeout — make sure Memoize is active and you're logged into Codeforces"));
+//       }, 60000); // 60s — scraping takes time
+
+//       window.addEventListener("message", function handler(e) {
+//         if (e.data?.type !== "MEMOIZE_SYNC_COMPLETE") return;
+//         clearTimeout(timeout);
+//         window.removeEventListener("message", handler);
+//         resolve(e.data);
+//       });
+
+//       // Trigger the extension scraper
+//       window.postMessage({ type: "MEMOIZE_TRIGGER_SYNC" }, "*");
+//     });
+
+//     // Step 2: Handle result
+//     if (result.success) {
+//       const now = new Date().toISOString();
+//       setLocalSynced(now);
+//       setSyncMsg(`Synced ${result.groups_synced} group${result.groups_synced !== 1 ? "s" : ""} · ${result.problems_synced} problems`);
+//       setSyncError(false);
+//       setTimeout(() => window.location.reload(), 1200);
+//     } else {
+//       setSyncMsg(result.message || "Sync failed");
+//       setSyncError(true);
+//     }
+
+//   } catch (err: any) {
+//     setSyncMsg(err.message || "Connection error");
+//     setSyncError(true);
+//   } finally {
+//     setSyncing(false);
+//   }
+// }
 
   return (
     <div className="stagger">
