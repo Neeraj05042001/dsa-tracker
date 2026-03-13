@@ -10,6 +10,7 @@ import {
   resetSyncFailures,
   logSyncAttempt,
 } from "@/lib/cf-queries";
+import { enrichContestRatings } from "@/lib/cf-enrich";
 import type { ScrapedGroup } from "@/lib/cf-scraper";
 
 const corsHeaders = {
@@ -81,6 +82,17 @@ export async function POST(request: NextRequest) {
     const { groupsSaved, problemsSaved } = await persistScrapedGroups(
       user.id,
       groups,
+    );
+
+
+    // Fire-and-forget rating enrichment — runs after persist, doesn't delay response
+    const uniqueContestIds = [
+      ...new Set(
+        groups.flatMap(g => g.contests.map(c => c.id))
+      )
+    ];
+    enrichContestRatings(user.id, uniqueContestIds).catch(e =>
+      console.error("[CF Push Groups] Enrichment error:", e.message)
     );
 
     await resetSyncFailures(user.id);
