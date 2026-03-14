@@ -1232,7 +1232,7 @@ export function GroupDetailClient({
         transition={{ duration: 0.3 }}
       >
         <Link
-          href="/dashboard2/groups"
+          href="/dashboard/groups"
           style={{
             display: "inline-flex",
             alignItems: "center",

@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/Topbar";
 import { getRevisionDue, getRevisionList, getUpcomingRevisions } from "@/lib/queries";
-import { RevisionClient } from "@/components/revision/RevisionClient";
+// import { RevisionClient } from "@/components/revision/RevisionClient";
+import { RevisionClient } from "@/components/new-responsive-dashboard/revision/RevisionClient";
 
 export default async function RevisionPage() {
   const [dueSM2, flagged, upcoming] = await Promise.all([

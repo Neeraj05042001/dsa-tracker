@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
-import { Topbar } from "@/components/layout/Topbar";
+// import { Topbar } from "@/components/layout/Topbar";
 import { getProblemByKey, getSubmissionHistory } from "@/lib/queries";
-import { ProblemDetail } from "@/components/problems/ProblemDetail";
+// import { ProblemDetail } from "@/components/problems/ProblemDetail";
+import { Topbar } from "@/components/new-responsive-dashboard/overview/Topbar";
+import { ProblemDetail } from "@/components/new-responsive-dashboard/problems/ProblemDetail";
 
 interface Props {
   params: Promise<{ key: string }>;

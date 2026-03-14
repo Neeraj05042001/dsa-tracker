@@ -2287,7 +2287,7 @@ function GroupCard({ g, index }: { g: GroupWithProblems; index: number }) {
 
       {/* ── FOOTER / CTA ──────────────────────────────────────────────── */}
       <Link
-        href={`/dashboard2/groups/${g.group_code}`}
+        href={`/dashboard/groups/${g.group_code}`}
         style={{
           position: "relative",
           zIndex: 1,

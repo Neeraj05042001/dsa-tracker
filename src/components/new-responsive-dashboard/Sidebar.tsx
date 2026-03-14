@@ -26,16 +26,16 @@ interface SidebarProps {
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { href: "/dashboard2", label: "Overview", Icon: IconHome },
-  { href: "/dashboard2/problems", label: "Problems", Icon: IconList },
+  { href: "/dashboard", label: "Overview", Icon: IconHome },
+  { href: "/dashboard/problems", label: "Problems", Icon: IconList },
   {
-    href: "/dashboard2/revision",
+    href: "/dashboard/revision",
     label: "Revision",
     Icon: IconRefresh,
     badge: true,
   },
-  { href: "/dashboard2/analytics", label: "Analytics", Icon: IconChart },
-  { href: "/dashboard2/groups", label: "CF Groups", Icon: IconGroups },
+  { href: "/dashboard/analytics", label: "Analytics", Icon: IconChart },
+  { href: "/dashboard/groups", label: "CF Groups", Icon: IconGroups },
 ];
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -726,8 +726,8 @@ export function Sidebar({
           {NAV_ITEMS.map(({ href, label, Icon, badge }) => {
             const normalizedPath = pathname.replace(/\/$/, "");
             const isActive =
-              href === "/dashboard2"
-                ? normalizedPath === "/dashboard2"
+              href === "/dashboard"
+                ? normalizedPath === "/dashboard"
                 : normalizedPath === href ||
                   normalizedPath.startsWith(href + "/");
 

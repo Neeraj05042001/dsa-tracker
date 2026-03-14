@@ -1321,7 +1321,7 @@ export function HeroCard({ group, completedContests, totalContests, nextProblem 
           style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "nowrap" }}
         >
           <Link
-            href="/dashboard2/groups"
+            href="/dashboard/groups"
             style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 500, color: "var(--text-muted)", textDecoration: "none", transition: "color 0.14s", flexShrink: 0, whiteSpace: "nowrap" }}
             onMouseOver={(e: any) => (e.currentTarget.style.color = "#00d4aa")}
             onMouseOut={(e: any) => (e.currentTarget.style.color = "var(--text-muted)")}
