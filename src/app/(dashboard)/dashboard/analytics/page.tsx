@@ -1,16 +1,4 @@
-// import { Topbar } from "@/components/layout/Topbar";
-// import { StatCard } from "@/components/stats/StatCard";
-// import { getDashboardStats } from "@/lib/queries";
-// import { DifficultyDonut } from "@/components/charts/DifficultyDonut";
-// import { HorizontalBars } from "@/components/charts/HorizontalBars";
-// import { SolveHelpBreakdown } from "@/components/charts/SolveHelpBreakdown";
-// import { SolvedOverTime } from "@/components/charts/SolvedOverTime";
-// import { ReadinessHero } from "@/components/charts/ReadinessHero";
-// import { InterviewMode } from "@/components/charts/InterviewMode";
-// import { FocusAreas } from "@/components/charts/FocusAreas";
-// import { PlatformSplit } from "@/components/charts/PlatformSplit";
-// import { PatternCoverageGrid } from "@/components/charts/PatternCoverageGrid";
-// import { AnalyticsPageClient } from "@/components/charts/AnalyticsPageClient";
+
 
 import { Topbar } from "@/components/new-responsive-dashboard/overview/Topbar";
 import { StatCard } from "@/components/new-responsive-dashboard/analytics/charts/StatCard";

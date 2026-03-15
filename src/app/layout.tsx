@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: "Memoize",
   description:
     "Solve once. Master forever. Auto-capture DSA problems with spaced repetition.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

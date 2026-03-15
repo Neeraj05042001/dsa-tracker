@@ -42,8 +42,14 @@ export async function middleware(request: NextRequest) {
 // ── Route matcher ────────────────────────────────────────────────
 // Tells Next.js which routes this middleware runs on.
 // Excludes static files, images, and Next.js internals for performance.
+// export const config = {
+//   matcher: [
+//     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+//   ],
+// };
+
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
