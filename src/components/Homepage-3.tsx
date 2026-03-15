@@ -544,7 +544,7 @@ export default function HomePageClient({ user }: Props) {
     router.refresh();
   };
 
-  const GDRIVE_LINK = "https://drive.google.com/your-link-here"; // ← replace this
+  const GDRIVE_LINK = "https://drive.google.com/drive/folders/1Qw2aYu2_Em0Pu_cMUhMcKGiPvjiQcsY7?usp=sharing"; // ← replace this
 
   const displayName =
     user?.user_metadata?.full_name?.split(" ")[0] ||

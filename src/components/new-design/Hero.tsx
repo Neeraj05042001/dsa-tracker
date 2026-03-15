@@ -3,7 +3,7 @@
 import { useReducedMotion, motion } from "framer-motion";
 import Link from "next/link";
 
-const GDRIVE_LINK = "https://drive.google.com/your-zip-link-here";
+const GDRIVE_LINK = "https://drive.google.com/drive/folders/1Qw2aYu2_Em0Pu_cMUhMcKGiPvjiQcsY7?usp=sharing";
 
 // ─── Motion helpers ───────────────────────────────────────────────────────────
 function FadeUp({
