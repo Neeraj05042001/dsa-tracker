@@ -11,7 +11,7 @@ interface NavLink {
   mono?: boolean;
 }
 
-const GDRIVE_LINK = "https://drive.google.com/drive/folders/1Qw2aYu2_Em0Pu_cMUhMcKGiPvjiQcsY7?usp=sharing";
+const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
 
 const NAV_LINKS: { group: string; links: NavLink[] }[] = [
   {

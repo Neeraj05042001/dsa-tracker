@@ -11,7 +11,7 @@ interface NavUser {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const GDRIVE_LINK = "https://drive.google.com/drive/folders/1Qw2aYu2_Em0Pu_cMUhMcKGiPvjiQcsY7?usp=sharing"; // Replace with actual Google Drive zip link
+const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing"; // Replace with actual Google Drive zip link
 
 // ─── useInView hook ───────────────────────────────────────────────────────────
 function useInView(threshold = 0.15) {
