@@ -687,6 +687,8 @@ import type { NavUser } from "@/components/HomePageClient-6";
 
 const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
 
+
+
 const NAV_LINKS = [
   { label: "Features",     href: "#features",     section: "features"    },
   { label: "How it works", href: "#how-it-works",  section: "how-it-works" },
