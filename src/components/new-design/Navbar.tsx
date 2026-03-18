@@ -833,7 +833,7 @@ function ProfileDropdown({ user, onClose }: { user: NavUser; onClose: () => void
       </div>
 
       {/* Sign out */}
-      <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "6px" }}>
+      {/* <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "6px" }}>
         <Link href="/auth/signout" onClick={onClose}
           style={{
             display: "flex", alignItems: "center", gap: 9,
@@ -862,7 +862,45 @@ function ProfileDropdown({ user, onClose }: { user: NavUser; onClose: () => void
           }}>→</span>
           Sign out
         </Link>
-      </div>
+      </div> */}
+
+      {/* Sign out */}
+<div style={{ borderTop: "1px solid var(--border-subtle)", padding: "6px" }}>
+  <form action="/auth/signout" method="POST">
+    <button
+      type="submit"
+      onClick={onClose}
+      style={{
+        display: "flex", alignItems: "center", gap: 9,
+        padding: "8px 10px", borderRadius: 10,
+        fontFamily: "var(--font-sans)", fontSize: 13,
+        color: "var(--text-muted)", textDecoration: "none",
+        transition: "all var(--transition-fast)",
+        border: "none", background: "none",
+        width: "100%", cursor: "pointer",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = "color-mix(in srgb, var(--hard) 8%, transparent)";
+        el.style.color = "var(--hard)";
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = "transparent";
+        el.style.color = "var(--text-muted)";
+      }}
+    >
+      <span style={{
+        width: 22, height: 22, borderRadius: 6,
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border-subtle)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 11, flexShrink: 0,
+      }}>→</span>
+      Sign out
+    </button>
+  </form>
+</div>
     </motion.div>
   );
 }
