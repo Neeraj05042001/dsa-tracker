@@ -544,7 +544,8 @@ export default function HomePageClient({ user }: Props) {
     router.refresh();
   };
 
-  const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing"; // ← replace this
+  // const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing"; // ← replace this
+  const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb"; // ← replace this
 
   const displayName =
     user?.user_metadata?.full_name?.split(" ")[0] ||

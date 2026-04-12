@@ -4,7 +4,8 @@ import { useRef, useState, useEffect } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 
-const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
+// const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
+const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb";
 
 // ─── Floating review cards — the "what you get" proof ────────────────────────
 const REVIEW_CARDS = [

@@ -685,7 +685,8 @@ import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { NavUser } from "@/components/HomePageClient-6";
 
-const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
+// const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
+const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb";
 
 
 

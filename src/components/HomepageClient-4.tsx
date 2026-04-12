@@ -11,7 +11,8 @@ interface NavUser {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing"; // Replace with actual Google Drive zip link
+// const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing"; // Replace with actual Google Drive zip link
+const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb"; // Replace with actual Google Drive zip link
 
 // ─── useInView hook ───────────────────────────────────────────────────────────
 function useInView(threshold = 0.15) {
