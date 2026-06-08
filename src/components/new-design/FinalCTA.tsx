@@ -3,9 +3,11 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 // const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
-const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb";
+const GDRIVE_LINK =
+  "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb";
 
 // ─── Floating review cards — the "what you get" proof ────────────────────────
 const REVIEW_CARDS = [
@@ -70,53 +72,125 @@ function ReviewCard({
         borderRadius: "var(--radius-lg)",
         padding: "12px 14px",
         width: 200,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--border-subtle)",
+        boxShadow:
+          "0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--border-subtle)",
         backdropFilter: "blur(8px)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
-        <div style={{
-          width: 22, height: 22, borderRadius: 5, flexShrink: 0,
-          background: card.platformMuted,
-          border: `1px solid color-mix(in srgb, ${card.platformColor} 30%, transparent)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: card.platformColor }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          marginBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 5,
+            flexShrink: 0,
+            background: card.platformMuted,
+            border: `1px solid color-mix(in srgb, ${card.platformColor} 30%, transparent)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              fontWeight: 700,
+              color: card.platformColor,
+            }}
+          >
             {card.platform}
           </span>
         </div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {card.problem}
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--text-muted)",
+          }}
+        >
           {card.tag}
         </span>
         <div style={{ display: "flex", gap: 2 }}>
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} style={{
-              width: 5, height: 5, borderRadius: "50%",
-              background: i < card.conf ? card.confColor : "var(--border-mid)",
-            }} />
+            <div
+              key={i}
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background:
+                  i < card.conf ? card.confColor : "var(--border-mid)",
+              }}
+            />
           ))}
         </div>
       </div>
 
-      <div style={{
-        marginTop: 8,
-        display: "flex", alignItems: "center", gap: 5,
-        padding: "4px 8px",
-        background: `color-mix(in srgb, ${card.dueColor} 8%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${card.dueColor} 20%, transparent)`,
-        borderRadius: "var(--radius-sm)",
-      }}>
+      <div
+        style={{
+          marginTop: 8,
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "4px 8px",
+          background: `color-mix(in srgb, ${card.dueColor} 8%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${card.dueColor} 20%, transparent)`,
+          borderRadius: "var(--radius-sm)",
+        }}
+      >
         <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-          <circle cx="4" cy="4" r="3.5" stroke={card.dueColor} strokeWidth="1" />
-          <path d="M4 2v2.5l1.5 1" stroke={card.dueColor} strokeWidth="1" strokeLinecap="round" />
+          <circle
+            cx="4"
+            cy="4"
+            r="3.5"
+            stroke={card.dueColor}
+            strokeWidth="1"
+          />
+          <path
+            d="M4 2v2.5l1.5 1"
+            stroke={card.dueColor}
+            strokeWidth="1"
+            strokeLinecap="round"
+          />
         </svg>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: card.dueColor }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: card.dueColor,
+          }}
+        >
           {card.due}
         </span>
       </div>
@@ -276,28 +350,38 @@ export default function FinalCTA() {
           style={{ background: "var(--bg-surface)" }}
         >
           <div className="finalcta-inner">
-
             {/* ── Left: Copy ──────────────────────────────── */}
             <div className="finalcta-left">
-
               {/* Label */}
               <motion.div
                 initial={{ opacity: 0, y: reduce ? 0 : 10 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.4, delay: 0.1 }}
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600,
-                  letterSpacing: "0.12em", textTransform: "uppercase",
-                  color: "var(--accent)", marginBottom: 20,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--accent)",
+                  marginBottom: 20,
                 }}
               >
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: "var(--accent)",
-                  boxShadow: "0 0 8px var(--accent)",
-                  animation: reduce ? "none" : "cta-pulse 2s ease-in-out infinite",
-                }} />
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "var(--accent)",
+                    boxShadow: "0 0 8px var(--accent)",
+                    animation: reduce
+                      ? "none"
+                      : "cta-pulse 2s ease-in-out infinite",
+                  }}
+                />
                 Start retaining today
                 <style>{`
                   @keyframes cta-pulse {
@@ -315,12 +399,15 @@ export default function FinalCTA() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "clamp(26px, 3vw, 38px)",
-                  fontWeight: 700, letterSpacing: "-0.03em",
-                  color: "var(--text-primary)", lineHeight: 1.15,
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                  color: "var(--text-primary)",
+                  lineHeight: 1.15,
                   margin: "0 0 14px",
                 }}
               >
-                Stop solving problems<br />
+                Stop solving problems
+                <br />
                 you've already solved.
               </motion.h2>
 
@@ -330,9 +417,12 @@ export default function FinalCTA() {
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.45, delay: 0.26 }}
                 style={{
-                  fontFamily: "var(--font-sans)", fontSize: 14,
-                  color: "var(--text-secondary)", lineHeight: 1.7,
-                  margin: "0 0 32px", maxWidth: 380,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 14,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.7,
+                  margin: "0 0 32px",
+                  maxWidth: 380,
                 }}
               >
                 Install Memoize, solve your next problem, and let the algorithm
@@ -345,21 +435,58 @@ export default function FinalCTA() {
                 initial={{ opacity: 0, y: reduce ? 0 : 10 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.45, delay: 0.33 }}
-                style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
               >
-                <a href={GDRIVE_LINK} target="_blank" rel="noopener noreferrer" className="finalcta-primary">
+                <a
+                  href={GDRIVE_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="finalcta-primary"
+                  onClick={() =>
+                    trackEvent(ANALYTICS_EVENTS.CHROME_STORE_CTA_CLICKED, {
+                      location: "Final-CTA",
+                      destination: "chrome_web_store",
+                    })
+                  }
+                >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="2.6" fill="currentColor" />
-                    <path d="M7 4.4H12.5C11.6 2.6 9.5 1.4 7 1.4C4.5 1.4 2.4 2.6 1.5 4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    <path d="M2.4 5.5L5.2 9.8C5.7 10.6 6.3 11.2 7 11.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                    <path d="M11.6 5.5L8.8 9.8C8.3 10.6 7.7 11.2 7 11.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <path
+                      d="M7 4.4H12.5C11.6 2.6 9.5 1.4 7 1.4C4.5 1.4 2.4 2.6 1.5 4.4"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M2.4 5.5L5.2 9.8C5.7 10.6 6.3 11.2 7 11.4"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M11.6 5.5L8.8 9.8C8.3 10.6 7.7 11.2 7 11.4"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   Add to Chrome — Free
                 </a>
                 <Link href="/login" className="finalcta-secondary">
                   Open Dashboard
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M2 6h8M7 3l3 3-3 3"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </Link>
               </motion.div>
@@ -370,18 +497,54 @@ export default function FinalCTA() {
                 animate={inView ? { opacity: 1 } : {}}
                 transition={{ duration: 0.4, delay: 0.5 }}
                 style={{
-                  display: "flex", alignItems: "center", gap: 16,
-                  marginTop: 18, flexWrap: "wrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  marginTop: 18,
+                  flexWrap: "wrap",
                 }}
               >
-                {["No credit card", "Manual install via chrome://extensions", "GitHub & Google auth"].map((item, i, arr) => (
-                  <span key={item} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
-                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", opacity: 0.6, display: "inline-block", flexShrink: 0 }} />
+                {[
+                  "No credit card",
+                  "Manual install via chrome://extensions",
+                  "GitHub & Google auth",
+                ].map((item, i, arr) => (
+                  <span
+                    key={item}
+                    style={{ display: "flex", alignItems: "center", gap: 16 }}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 4,
+                          height: 4,
+                          borderRadius: "50%",
+                          background: "var(--accent)",
+                          opacity: 0.6,
+                          display: "inline-block",
+                          flexShrink: 0,
+                        }}
+                      />
                       {item}
                     </span>
                     {i < arr.length - 1 && (
-                      <span style={{ width: 1, height: 10, background: "var(--border-subtle)", display: "inline-block" }} />
+                      <span
+                        style={{
+                          width: 1,
+                          height: 10,
+                          background: "var(--border-subtle)",
+                          display: "inline-block",
+                        }}
+                      />
                     )}
                   </span>
                 ))}
@@ -391,21 +554,31 @@ export default function FinalCTA() {
             {/* ── Right: Floating review cards ────────────── */}
             <div className="finalcta-right">
               {/* Center glow */}
-              <div style={{
-                position: "absolute", inset: 0,
-                background: "radial-gradient(ellipse at 50% 50%, rgba(0,212,170,0.06) 0%, transparent 60%)",
-                pointerEvents: "none",
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "radial-gradient(ellipse at 50% 50%, rgba(0,212,170,0.06) 0%, transparent 60%)",
+                  pointerEvents: "none",
+                }}
+              />
 
               {/* Dot grid inside right panel */}
-              <div style={{
-                position: "absolute", inset: 0,
-                backgroundImage: "radial-gradient(circle, rgba(0,212,170,0.12) 1px, transparent 1px)",
-                backgroundSize: "24px 24px",
-                maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)",
-                pointerEvents: "none",
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(0,212,170,0.12) 1px, transparent 1px)",
+                  backgroundSize: "24px 24px",
+                  maskImage:
+                    "radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)",
+                  pointerEvents: "none",
+                }}
+              />
 
               {/* Cards */}
               {REVIEW_CARDS.map((card, i) => (
@@ -435,20 +608,36 @@ export default function FinalCTA() {
                 animate={inView ? { opacity: 1 } : {}}
                 transition={{ duration: 0.4, delay: 0.8 }}
                 style={{
-                  position: "absolute", bottom: 20, left: "50%",
+                  position: "absolute",
+                  bottom: 20,
+                  left: "50%",
                   transform: "translateX(-50%)",
-                  fontFamily: "var(--font-mono)", fontSize: 9,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
                   color: "var(--text-muted)",
-                  display: "flex", alignItems: "center", gap: 5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
                   whiteSpace: "nowrap",
                 }}
               >
-                <div style={{ width: 16, height: 1, background: "var(--border-mid)" }} />
+                <div
+                  style={{
+                    width: 16,
+                    height: 1,
+                    background: "var(--border-mid)",
+                  }}
+                />
                 your revision queue, scheduled automatically
-                <div style={{ width: 16, height: 1, background: "var(--border-mid)" }} />
+                <div
+                  style={{
+                    width: 16,
+                    height: 1,
+                    background: "var(--border-mid)",
+                  }}
+                />
               </motion.div>
             </div>
-
           </div>
         </motion.div>
       </section>
@@ -458,7 +647,7 @@ export default function FinalCTA() {
 
 // ─── Card positions ───────────────────────────────────────────────────────────
 const cardPositions: React.CSSProperties[] = [
-  { top: "10%",  left: "8%"  },
-  { top: "36%",  left: "38%" },
-  { top: "62%",  left: "10%" },
+  { top: "10%", left: "8%" },
+  { top: "36%", left: "38%" },
+  { top: "62%", left: "10%" },
 ];

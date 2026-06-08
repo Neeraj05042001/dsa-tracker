@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -288,7 +289,7 @@ function LoginPageInner() {
         </div>
 
         {/* OAuth buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <OAuthButton
             onClick={() => handleOAuth("github")}
             loading={loadingProvider === "github"}
@@ -303,23 +304,49 @@ function LoginPageInner() {
             label="Continue with Google"
             sublabel="Sign in with your Google account"
           />
+        </div> */}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <OAuthButton
+            onClick={() => handleTrackedOAuth("github")}
+            loading={loadingProvider === "github"}
+            icon={<IcoGithub />}
+            label="Continue with GitHub"
+            sublabel="Recommended for developers"
+          />
+
+          <OAuthButton
+            onClick={() => handleTrackedOAuth("google")}
+            loading={loadingProvider === "google"}
+            icon={<IcoGoogle />}
+            label="Continue with Google"
+            sublabel="Sign in with your Google account"
+          />
         </div>
         {/* Warning for ISP */}
 
         {/* Network warning */}
-        <div style={{
-          marginTop: 14,
-          padding: "10px 14px",
-          background: "color-mix(in srgb, var(--accent) 8%, transparent)",
-          border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
-          borderRadius: "var(--radius-md)",
-          fontSize: 11,
-          color: "var(--text-muted)",
-          lineHeight: 1.6,
-          textAlign: "center",
-        }}>
-          ⚠️ If login gets stuck or times out,<br />
-          switch to <strong style={{ color: "var(--text-secondary)" }}>mobile data</strong> or a different network and try again.
+        <div
+          style={{
+            marginTop: 14,
+            padding: "10px 14px",
+            background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
+            borderRadius: "var(--radius-md)",
+            fontSize: 11,
+            color: "var(--text-muted)",
+            lineHeight: 1.6,
+            textAlign: "center",
+          }}
+        >
+          ⚠️ If login gets stuck or times out,
+          <br />
+          switch to{" "}
+          <strong style={{ color: "var(--text-secondary)" }}>
+            mobile data
+          </strong>{" "}
+          or a different network and try again.
         </div>
 
         {/* Error state */}
@@ -422,8 +449,21 @@ function LoginPageInner() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ background: "var(--bg-base)", minHeight: "100vh" }} />}>
+    <Suspense
+      fallback={
+        <div style={{ background: "var(--bg-base)", minHeight: "100vh" }} />
+      }
+    >
       <LoginPageInner />
     </Suspense>
   );
+}
+
+function handleTrackedOAuth(provider: "github" | "google") {
+  trackEvent(ANALYTICS_EVENTS.LOGIN_INITIATED, {
+    provider,
+    location: "login_page",
+  });
+
+  handleOAut(provider);
 }

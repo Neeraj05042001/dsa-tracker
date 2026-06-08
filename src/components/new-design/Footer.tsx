@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 interface NavLink {
   label: string;
@@ -12,7 +13,8 @@ interface NavLink {
 }
 
 // const GDRIVE_LINK = "https://drive.google.com/drive/folders/1xnCqLaypRuXp37GQ9MEBD8lRkIiPM1bf?usp=sharing";
-const GDRIVE_LINK = "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb"
+const GDRIVE_LINK =
+  "https://chromewebstore.google.com/detail/dlfipbkplfgkidcmiafkadcilalalkag?utm_source=item-share-cb";
 
 const NAV_LINKS: { group: string; links: NavLink[] }[] = [
   {
@@ -361,6 +363,12 @@ export default function Footer() {
                 href={GDRIVE_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  trackEvent(ANALYTICS_EVENTS.CHROME_STORE_CTA_CLICKED, {
+                    location: "Footer",
+                    destination: "chrome_web_store",
+                  })
+                }
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
