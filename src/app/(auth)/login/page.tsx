@@ -178,6 +178,14 @@ function LoginPageInner() {
     // If no error, the browser is now redirecting to Google/GitHub.
     // We keep loading state — page will navigate away.
   }
+  function handleTrackedOAuth(provider: "github" | "google") {
+  trackEvent(ANALYTICS_EVENTS.LOGIN_INITIATED, {
+    provider,
+    location: "login_page",
+  });
+
+  handleOAuth(provider);
+}
 
   return (
     <div
@@ -459,11 +467,4 @@ export default function LoginPage() {
   );
 }
 
-function handleTrackedOAuth(provider: "github" | "google") {
-  trackEvent(ANALYTICS_EVENTS.LOGIN_INITIATED, {
-    provider,
-    location: "login_page",
-  });
 
-  handleOAut(provider);
-}
