@@ -5,6 +5,7 @@ import Link from "next/link";
 // import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,8 @@ function LoginPageInner() {
     setLoadingProvider(provider);
     setError(null);
 
+    posthog.capture("login_initiated", { provider });
+
     const supabase = createSupabaseBrowserClient();
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -167,6 +170,7 @@ function LoginPageInner() {
     });
 
     if (error) {
+      posthog.captureException(error);
       setError("Something went wrong. Please try again.");
       setLoadingProvider(null);
     }

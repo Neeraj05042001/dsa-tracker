@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { encryptSession } from "@/lib/cf-encrypt";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,6 +100,18 @@ export async function POST(request: NextRequest) {
     console.log(
       `[CF Store Session] Stored for user ${user.email} (cf_clearance: ${cf_clearance ? "yes" : "no"}) in ${Date.now() - startTime}ms`,
     );
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "cf_session_stored",
+      properties: {
+        cf_handle: cf_handle.trim().toLowerCase(),
+        has_cf_clearance: !!cf_clearance,
+        duration_ms: Date.now() - startTime,
+      },
+    });
+    await posthog.shutdown();
 
     return NextResponse.json(
       { success: true, message: "CF session stored" },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,6 +58,19 @@ export async function POST(req: NextRequest) {
       console.error("SM2 update error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "problem_review_saved",
+      properties: {
+        sm2_interval,
+        sm2_repetitions,
+        confidence: confidence ?? null,
+        needs_revision: needs_revision ?? false,
+      },
+    });
+    await posthog.shutdown();
 
     return NextResponse.json({ ok: true });
   } catch (err) {

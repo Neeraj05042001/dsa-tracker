@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 import {
   ExtensionPayload,
@@ -212,6 +213,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[API] Success:", data);
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: userId,
+      event: "problem_added_from_extension",
+      properties: {
+        platform: body.platform,
+        difficulty: normalizedDifficulty,
+        confidence: body.confidence ?? null,
+        solve_help: body.solve_help ?? null,
+        is_update: !!existing,
+        has_approach: !!body.approach,
+        has_mistakes: !!body.mistakes,
+      },
+    });
+    await posthog.shutdown();
 
     return NextResponse.json(
       {

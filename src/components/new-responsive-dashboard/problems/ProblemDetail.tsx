@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Problem, SubmissionHistory } from "@/types";
+import posthog from "posthog-js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -624,6 +625,15 @@ export function ProblemDetail({ problem, submissions }: ProblemDetailProps) {
         const json = await res.json();
         if (!json.success) throw new Error(json.message);
         const updated = json.problem;
+        posthog.capture("problem_detail_saved", {
+          platform: localProblem.platform,
+          difficulty: effectiveDifficulty(localProblem),
+          has_approach: !!edit.approach.trim(),
+          has_mistakes: !!edit.mistakes.trim(),
+          has_pattern: !!edit.pattern.trim(),
+          confidence: edit.confidence || null,
+          needs_revision: edit.needs_revision,
+        });
         setLocalProblem(updated);
         setIsEditing(false);
       } catch (e) {

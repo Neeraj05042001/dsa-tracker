@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -18,6 +19,27 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const posthog = getPostHogClient();
+        posthog.identify({
+          distinctId: user.id,
+          properties: {
+            email: user.email,
+            name: user.user_metadata?.full_name ?? user.user_metadata?.name,
+            provider: user.app_metadata?.provider,
+          },
+        });
+        posthog.capture({
+          distinctId: user.id,
+          event: "user_logged_in",
+          properties: {
+            provider: user.app_metadata?.provider,
+            email: user.email,
+          },
+        });
+        await posthog.shutdown();
+      }
       // Success — send them where they were trying to go
       return NextResponse.redirect(`${origin}${redirectTo}`);
     }

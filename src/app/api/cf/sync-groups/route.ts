@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { decryptSession } from "@/lib/cf-encrypt";
 import { scrapeUserGroups } from "@/lib/cf-scraper";
+import { getPostHogClient } from "@/lib/posthog-server";
 import {
   getUserCfAuth,
   persistScrapedGroups,
@@ -206,6 +207,21 @@ export async function POST(request: NextRequest) {
       `[CF Sync] Done for ${cfAuth.cf_handle}: ` +
         `${groupsSaved} groups, ${problemsSaved} problems in ${Date.now() - startTime}ms`,
     );
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "cf_groups_synced",
+      properties: {
+        triggered_by: triggeredBy,
+        groups_synced: groupsSaved,
+        problems_synced: problemsSaved,
+        partial: scrapeResult.partial ?? false,
+        rate_limited: scrapeResult.rateLimited ?? false,
+        duration_ms: Date.now() - startTime,
+      },
+    });
+    await posthog.shutdown();
 
     // ── Respond ───────────────────────────────────────────────────
     return NextResponse.json(

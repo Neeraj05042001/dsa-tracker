@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Problem } from "@/types";
+import posthog from "posthog-js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2145,6 +2146,16 @@ export function RevisionClient({
 
     const result = runSM2(current, quality);
 
+    const gradeLabel: Record<SM2Quality, string> = { 0: "again", 2: "hard", 4: "good", 5: "easy" };
+    posthog.capture("problem_graded", {
+      grade: gradeLabel[quality],
+      platform: current.platform,
+      difficulty: current.difficulty ?? current.user_difficulty ?? null,
+      pattern: current.pattern ?? null,
+      queue_type: tab,
+      next_interval_days: result.interval,
+    });
+
     try {
       const res = await fetch("/api/problems/update", {
         method: "PATCH",
@@ -2179,6 +2190,16 @@ export function RevisionClient({
       const remaining = queue.filter((_, i) => i !== activeIdx);
       setQueue(remaining);
       if (remaining.length === 0) {
+        const results = [...sessionResults, { quality, problemName: current.problem_name }];
+        const gradeCounts = results.reduce(
+          (acc, r) => { acc[gradeLabel[r.quality as SM2Quality] as keyof typeof acc]++; return acc; },
+          { again: 0, hard: 0, good: 0, easy: 0 },
+        );
+        posthog.capture("revision_session_completed", {
+          queue_type: tab,
+          total_reviewed: results.length,
+          ...gradeCounts,
+        });
         setSessionDone(true);
         setActiveIdx(0);
       } else {
